@@ -25,7 +25,11 @@ MarkdownEditor.Web/
   Controllers/               MVC endpoint
   Views/Editor/Index.cshtml   Host page with CSS/JS references
   Views/Shared/_MarkdownEditor.cshtml  Reusable editor partial
-  Scripts/                   All TypeScript source and tests
+  Scripts/                   TypeScript entry point and editor coordinator
+    editing/                 Formatting, history, and code block insertion
+    tables/                  Table parsing, operations, picker, and dialog
+    rendering/               Preview, highlighting, and content extraction
+    persistence/             Browser drafts and server submission
     tests/                   Playwright browser scenarios
   wwwroot/css/               BEM styles
   wwwroot/js/                Generated editor bundle

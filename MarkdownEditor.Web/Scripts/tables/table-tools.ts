@@ -1,6 +1,6 @@
-import { element } from './dom';
-import { replaceRange } from './formatting';
-import type { TextEdit } from './formatting';
+import { element } from '../dom';
+import { replaceRange } from '../editing/formatting';
+import type { TextEdit } from '../editing/formatting';
 import { TableDialog } from './table-dialog';
 import { createTable, findTable, insertTable, serializeTable } from './tables';
 import type { LocatedTable, MarkdownTable } from './tables';

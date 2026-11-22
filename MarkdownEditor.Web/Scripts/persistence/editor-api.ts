@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { element } from './dom';
-import { getEditorContent } from './document-content';
-import type { MarkdownContent } from './document-content';
+import { element } from '../dom';
+import { getEditorContent } from '../rendering/document-content';
+import type { MarkdownContent } from '../rendering/document-content';
 
 export interface MarkdownReceipt {
   message: string;

@@ -1,4 +1,4 @@
-import { element } from './dom';
+import { element } from '../dom';
 import { renderPreview } from './preview';
 
 export interface MarkdownContent {
