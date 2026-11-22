@@ -1,12 +1,12 @@
 import { element } from './dom';
-import { loadDraft, saveDraft } from './draft';
-import { headingLine, linkMarkdown, prefixedLine, replaceRange, transformLines, wrapSelection } from './formatting';
-import type { TextEdit } from './formatting';
-import { EditorHistory } from './history';
-import { renderPreview } from './preview';
-import { TableTools } from './table-tools';
-import { submissionError, submitEditorContent } from './editor-api';
-import { insertCodeBlock, populateCodeLanguages } from './code-blocks';
+import { loadDraft, saveDraft } from './persistence/draft';
+import { headingLine, linkMarkdown, prefixedLine, replaceRange, transformLines, wrapSelection } from './editing/formatting';
+import type { TextEdit } from './editing/formatting';
+import { EditorHistory } from './editing/history';
+import { renderPreview } from './rendering/preview';
+import { TableTools } from './tables/table-tools';
+import { submissionError, submitEditorContent } from './persistence/editor-api';
+import { insertCodeBlock, populateCodeLanguages } from './editing/code-blocks';
 
 export class MarkdownEditor {
   private readonly source: HTMLTextAreaElement;

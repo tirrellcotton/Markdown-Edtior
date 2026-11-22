@@ -1,4 +1,4 @@
-import { element } from './dom';
+import { element } from '../dom';
 import type { MarkdownTable } from './tables';
 import { deleteColumn, deleteRow, insertColumn, insertRow } from './table-operations';
 import type { TableCellPosition, TableScope } from './table-operations';
