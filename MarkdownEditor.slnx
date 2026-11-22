@@ -1,5 +1,3 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/MarkdownEditor.Web/MarkdownEditor.Web.csproj" />
-  </Folder>
+  <Project Path="MarkdownEditor.Web/MarkdownEditor.Web.csproj" />
 </Solution>

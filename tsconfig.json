@@ -10,5 +10,5 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["src/MarkdownEditor.Web/Scripts/**/*.ts"]
+  "include": ["MarkdownEditor.Web/Scripts/**/*.ts"]
 }

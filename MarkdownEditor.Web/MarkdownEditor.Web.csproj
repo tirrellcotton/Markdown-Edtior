@@ -6,8 +6,8 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);node_modules/**;.reference/**;test-results/**;playwright-report/**</DefaultItemExcludes>
   </PropertyGroup>
   <Target Name="BuildFrontend" BeforeTargets="BeforeBuild" Condition="'$(DesignTimeBuild)' != 'true'">
-    <Exec Command="npm.cmd run build" WorkingDirectory="$(MSBuildProjectDirectory)/../.." Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
-    <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)/../.." Condition="!$([MSBuild]::IsOSPlatform('Windows'))" />
+    <Exec Command="npm.cmd run build" WorkingDirectory="$(MSBuildProjectDirectory)/.." Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+    <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)/.." Condition="!$([MSBuild]::IsOSPlatform('Windows'))" />
     <ItemGroup>
       <Content Remove="wwwroot/js/**;wwwroot/lib/**" />
       <Content Include="wwwroot/js/**;wwwroot/lib/**" CopyToPublishDirectory="PreserveNewest" />
