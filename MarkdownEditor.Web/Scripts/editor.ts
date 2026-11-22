@@ -1,8 +1,8 @@
 import { MarkdownEditor } from './markdown-editor';
-export { getEditorContent } from './document-content';
-export { submitEditorContent } from './editor-api';
-export type { MarkdownContent } from './document-content';
-export type { MarkdownReceipt } from './editor-api';
+export { getEditorContent } from './rendering/document-content';
+export { submitEditorContent } from './persistence/editor-api';
+export type { MarkdownContent } from './rendering/document-content';
+export type { MarkdownReceipt } from './persistence/editor-api';
 
 const initializedEditors = new WeakSet<HTMLElement>();
 

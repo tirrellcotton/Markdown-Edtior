@@ -1,7 +1,7 @@
 import { marked } from 'marked';
 import type { Tokens } from 'marked';
-import { replaceRange } from './formatting';
-import type { TextEdit } from './formatting';
+import { replaceRange } from '../editing/formatting';
+import type { TextEdit } from '../editing/formatting';
 
 export type TableAlignment = 'left' | 'center' | 'right' | null;
 

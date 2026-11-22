@@ -1,12 +1,14 @@
 import { element } from './dom';
-import { loadDraft, saveDraft } from './draft';
-import { headingLine, linkMarkdown, prefixedLine, replaceRange, transformLines, wrapSelection } from './formatting';
-import type { TextEdit } from './formatting';
-import { EditorHistory } from './history';
-import { renderPreview } from './preview';
-import { TableTools } from './table-tools';
-import { submissionError, submitEditorContent } from './editor-api';
-import { insertCodeBlock, populateCodeLanguages } from './code-blocks';
+import { loadDraft, saveDraft } from './persistence/draft';
+import { headingLine, linkMarkdown, prefixedLine, replaceRange, transformLines, wrapSelection } from './editing/formatting';
+import type { TextEdit } from './editing/formatting';
+import { EditorHistory } from './editing/history';
+import { renderPreview } from './rendering/preview';
+import { TableTools } from './tables/table-tools';
+import { submissionError, submitEditorContent } from './persistence/editor-api';
+import { insertCodeBlock, populateCodeLanguages } from './editing/code-blocks';
+import { activeFormatting, formattingRanges } from './editing/formatting-state';
+import type { FormattingRange } from './editing/formatting-state';
 
 export class MarkdownEditor {
   private readonly source: HTMLTextAreaElement;
@@ -23,6 +25,7 @@ export class MarkdownEditor {
   private readonly storageKey: string;
   private linkSelection = { start: 0, end: 0 };
   private fileName = 'untitled.md';
+  private formatting: FormattingRange[] = [];
 
   /** Initializes one reusable editor with independent controls and undo history. */
   constructor(private readonly root: HTMLElement) {
@@ -54,7 +57,7 @@ export class MarkdownEditor {
     return { text: this.source.value, start: this.source.selectionStart, end: this.source.selectionEnd };
   }
 
-  /** Updates document statistics and the heading selector for the current line. */
+  /** Updates document statistics and formatting controls for the current selection. */
   private updateSelection(): void {
     const preceding = this.source.value.slice(0, this.source.selectionStart);
     const line = preceding.split('\n').length;
@@ -63,12 +66,24 @@ export class MarkdownEditor {
     const lineStart = preceding.lastIndexOf('\n') + 1;
     const match = this.source.value.slice(lineStart).match(/^(#{1,6})\s/);
     this.heading.value = String(match?.[1].length ?? 0);
+    this.updateFormattingButtons();
     this.history.rememberSelection(this.snapshot());
+  }
+
+  /** Reflects the selected Markdown styles visually and for assistive technology. */
+  private updateFormattingButtons(): void {
+    const active = activeFormatting(this.formatting, this.source.selectionStart, this.source.selectionEnd);
+    for (const command of ['bold', 'italic', 'strike'] as const) {
+      const button = this.find(`[data-command="${command}"]`, HTMLButtonElement);
+      button.setAttribute('aria-pressed', String(active.has(command)));
+      button.classList.toggle('toolbar__button--active', active.has(command));
+    }
   }
 
   /** Refreshes the live preview, status, and undo controls after a document change. */
   private refresh(): void {
     renderPreview(this.preview, this.source.value);
+    this.formatting = formattingRanges(this.source.value);
     const words = this.source.value.trim().match(/\S+/g)?.length ?? 0;
     this.find('[data-editor-element="word-count"]', HTMLSpanElement).textContent = `${words} ${words === 1 ? 'word' : 'words'}`;
     this.find('[data-editor-element="character-count"]', HTMLSpanElement).textContent = `${this.source.value.length} characters`;
@@ -307,6 +322,7 @@ export class MarkdownEditor {
     this.source.addEventListener('keyup', this.updateSelection.bind(this));
     this.source.addEventListener('click', this.updateSelection.bind(this));
     this.source.addEventListener('select', this.updateSelection.bind(this));
+    this.source.addEventListener('selectionchange', this.updateSelection.bind(this));
     this.fileInput.addEventListener('change', this.openFile.bind(this));
     this.find('[data-editor-element="link-form"]', HTMLFormElement).addEventListener('submit', this.submitLink.bind(this));
     this.find('[data-editor-element="link-cancel"]', HTMLButtonElement).addEventListener('click', this.closeLink.bind(this));

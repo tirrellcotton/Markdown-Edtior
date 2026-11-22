@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { codeLanguages } from '../code-blocks';
+import { codeLanguages } from '../editing/code-blocks';
 
 test('inserts a tagged code block for every language option', /** Verifies every dropdown option produces a fence supported by the preview highlighter. */ async ({ page }) => {
   await page.goto('/');

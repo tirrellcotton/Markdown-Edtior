@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 
-const root = fileURLToPath(new URL('../../../', import.meta.url));
+const root = fileURLToPath(new URL('../', import.meta.url));
 
 export default defineConfig({
   testDir: './tests',
@@ -14,7 +14,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command: 'dotnet run --project src/MarkdownEditor.Web --no-launch-profile --urls http://localhost:5100',
+    command: 'dotnet run --no-launch-profile --urls http://localhost:5100',
     cwd: root,
     url: 'http://localhost:5100',
     reuseExistingServer: !process.env.CI,
