@@ -1,0 +1,129 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{
+    var editorId = $"markdown-editor-{Guid.NewGuid():N}";
+    var storageKey = ViewData["MarkdownEditorStorageKey"] as string ?? "markdown-editor.draft.v1";
+    var postUrl = ViewData["MarkdownEditorPostUrl"] as string ?? Url.Action("Submit", "Editor");
+    var requestToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+  <section class="editor" id="@editorId" data-markdown-editor data-storage-key="@storageKey" data-post-url="@postUrl" aria-label="Markdown workspace">
+    <input type="hidden" data-editor-element="request-token" value="@requestToken" />
+    <div class="toolbar" role="toolbar" aria-label="Formatting toolbar">
+      <div class="toolbar__group">
+        <label class="toolbar__select-label" for="@(editorId)-heading"><i class="bi bi-type" aria-hidden="true"></i></label>
+        <select class="toolbar__select" id="@(editorId)-heading" data-editor-element="heading" aria-label="Text style">
+          <option value="0">Body</option><option value="1">Title · H1</option><option value="2">Subtitle · H2</option>
+          <option value="3">Heading · H3</option><option value="4">Subheading · H4</option>
+          <option value="5">Section · H5</option><option value="6">Subsection · H6</option>
+        </select>
+      </div>
+      <div class="toolbar__group">
+        <button class="toolbar__button" type="button" data-command="bold" title="Bold (Ctrl+B)" aria-label="Bold"><i class="bi bi-type-bold" aria-hidden="true"></i></button>
+        <button class="toolbar__button" type="button" data-command="italic" title="Italic (Ctrl+I)" aria-label="Italic"><i class="bi bi-type-italic" aria-hidden="true"></i></button>
+        <button class="toolbar__button" type="button" data-command="strike" title="Strikethrough" aria-label="Strikethrough"><i class="bi bi-type-strikethrough" aria-hidden="true"></i></button>
+      </div>
+      <div class="toolbar__group">
+        <button class="toolbar__button" type="button" data-command="bullet" title="Bulleted list" aria-label="Bulleted list"><i class="bi bi-list-ul" aria-hidden="true"></i></button>
+        <button class="toolbar__button" type="button" data-command="numbered" title="Numbered list" aria-label="Numbered list"><i class="bi bi-list-ol" aria-hidden="true"></i></button>
+        <button class="toolbar__button" type="button" data-command="task" title="Task list" aria-label="Task list"><i class="bi bi-list-check" aria-hidden="true"></i></button>
+        <button class="toolbar__button" type="button" data-command="quote" title="Blockquote" aria-label="Blockquote"><i class="bi bi-quote" aria-hidden="true"></i></button>
+      </div>
+      <div class="toolbar__group">
+        <button class="toolbar__button" type="button" data-command="link" title="Insert link (Ctrl+K)" aria-label="Insert link"><i class="bi bi-link-45deg" aria-hidden="true"></i></button>
+        <div class="table-tools">
+          <button class="toolbar__button" type="button" data-command="table" title="Insert or edit table" aria-label="Insert or edit table" aria-expanded="false" aria-controls="@(editorId)-table-picker" aria-haspopup="dialog"><i class="bi bi-table" aria-hidden="true"></i></button>
+          <div class="table-tools__picker" id="@(editorId)-table-picker" data-editor-element="table-picker" role="dialog" aria-labelledby="@(editorId)-table-picker-title" hidden>
+            <div class="table-tools__heading"><span id="@(editorId)-table-picker-title" data-editor-element="table-picker-title">Insert table</span><span id="@(editorId)-table-size-label" data-editor-element="table-size-label" aria-live="polite">2 × 2</span></div>
+            <div class="table-tools__grid" id="@(editorId)-table-size-grid" data-editor-element="table-size-grid" role="group" aria-label="Table size"></div>
+            <p class="table-tools__hint">Rows include the header row.</p>
+            <button class="table-tools__action" type="button" id="@(editorId)-table-insert" data-editor-element="table-insert"><i class="bi bi-table" aria-hidden="true"></i> Insert table</button>
+            <button class="table-tools__action" type="button" id="@(editorId)-table-edit" data-editor-element="table-edit" aria-expanded="false" aria-controls="@(editorId)-table-edit-menu"><i class="bi bi-pencil-square" aria-hidden="true"></i> Edit table <i class="bi bi-chevron-down" aria-hidden="true"></i></button>
+            <div class="table-tools__edit-menu" id="@(editorId)-table-edit-menu" data-editor-element="table-edit-menu" hidden>
+              <details class="table-tools__submenu">
+                <summary class="table-tools__summary">Insert</summary>
+                <button class="table-tools__option" type="button" data-table-operation="column-left">Column left</button>
+                <button class="table-tools__option" type="button" data-table-operation="column-right">Column right</button>
+                <button class="table-tools__option" type="button" data-table-operation="row-above">Row above</button>
+                <button class="table-tools__option" type="button" data-table-operation="row-below">Row below</button>
+              </details>
+              <details class="table-tools__submenu">
+                <summary class="table-tools__summary">Select</summary>
+                <button class="table-tools__option" type="button" data-table-operation="select-table">Table</button>
+                <button class="table-tools__option" type="button" data-table-operation="select-column">Column</button>
+                <button class="table-tools__option" type="button" data-table-operation="select-row">Row</button>
+              </details>
+              <details class="table-tools__submenu">
+                <summary class="table-tools__summary">Delete</summary>
+                <button class="table-tools__option" type="button" data-table-operation="delete-table">Table</button>
+                <button class="table-tools__option" type="button" data-table-operation="delete-column">Column</button>
+                <button class="table-tools__option" type="button" data-table-operation="delete-row">Row</button>
+              </details>
+              <button class="table-tools__option" type="button" data-table-operation="edit-cells">Edit cell contents…</button>
+            </div>
+            <p class="table-tools__hint">To edit, place the cursor inside a Markdown table.</p>
+          </div>
+        </div>
+        <button class="toolbar__button" type="button" data-command="code" title="Inline code" aria-label="Inline code"><i class="bi bi-code" aria-hidden="true"></i></button>
+        <div class="toolbar__code-language">
+          <label class="toolbar__select-label" for="@(editorId)-code-language"><i class="bi bi-code-square" aria-hidden="true"></i></label>
+          <select class="toolbar__select toolbar__select--code" id="@(editorId)-code-language" data-editor-element="code-language" aria-label="Insert code block" title="Choose a language to insert a code block">
+            <option value="">Code block</option>
+          </select>
+        </div>
+        <button class="toolbar__button" type="button" data-command="rule" title="Horizontal rule" aria-label="Horizontal rule"><i class="bi bi-hr" aria-hidden="true"></i></button>
+      </div>
+      <div class="toolbar__group">
+        <button class="toolbar__button" type="button" data-command="undo" title="Undo (Ctrl+Z)" aria-label="Undo"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
+        <button class="toolbar__button" type="button" data-command="redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i></button>
+      </div>
+      <div class="toolbar__group toolbar__group--end">
+        <button class="toolbar__button" type="button" data-command="send" title="Send to server" aria-label="Send to server"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i></button>
+        <button class="toolbar__button" type="button" data-command="open" title="Open Markdown file" aria-label="Open Markdown file"><i class="bi bi-folder2-open" aria-hidden="true"></i></button>
+        <button class="toolbar__button toolbar__button--download" type="button" data-command="download" title="Download Markdown (Ctrl+S)" aria-label="Download Markdown"><i class="bi bi-download" aria-hidden="true"></i><span class="toolbar__button-text">Download</span></button>
+      </div>
+    </div>
+
+    <div class="editor__panes">
+      <section class="editor__pane" aria-labelledby="@(editorId)-source-title">
+        <div class="editor__pane-header"><h2 class="editor__pane-title" id="@(editorId)-source-title" data-editor-element="source-title"><i class="bi bi-markdown" aria-hidden="true"></i> Markdown</h2><span class="editor__pane-hint">Write something great</span></div>
+        <textarea class="editor__source" id="@(editorId)-markdown-source" data-editor-element="markdown-source" aria-label="Markdown content" spellcheck="false" placeholder="Start writing Markdown…"></textarea>
+      </section>
+      <section class="editor__pane editor__pane--preview" aria-labelledby="@(editorId)-preview-title">
+        <div class="editor__pane-header"><h2 class="editor__pane-title" id="@(editorId)-preview-title" data-editor-element="preview-title"><i class="bi bi-eye" aria-hidden="true"></i> Preview</h2><span class="editor__live-label">Live preview</span></div>
+        <div class="editor__preview" id="@(editorId)-markdown-preview" data-editor-element="markdown-preview" role="region" aria-label="Rendered Markdown preview" tabindex="0"></div>
+      </section>
+    </div>
+    <footer class="editor__status"><span id="@(editorId)-cursor-position" data-editor-element="cursor-position">Ln 1, Col 1</span><span id="@(editorId)-word-count" data-editor-element="word-count">0 words</span><span id="@(editorId)-character-count" data-editor-element="character-count">0 characters</span><span class="editor__message" data-editor-element="editor-message" role="status" hidden></span><span class="editor__status-end">Markdown <span class="editor__status-divider">|</span> UTF-8</span></footer>
+    <input id="@(editorId)-open-file" data-editor-element="open-file" type="file" accept=".md,.markdown,.txt,text/plain,text/markdown" hidden />
+
+
+  <dialog class="link-dialog" id="@(editorId)-link-dialog" data-editor-element="link-dialog" aria-labelledby="@(editorId)-link-title">
+    <form class="link-dialog__form" id="@(editorId)-link-form" data-editor-element="link-form">
+      <h2 class="link-dialog__title" id="@(editorId)-link-title" data-editor-element="link-title">Insert link</h2>
+      <label class="link-dialog__label" for="@(editorId)-link-text">Display text</label>
+      <input class="link-dialog__input" id="@(editorId)-link-text" data-editor-element="link-text" placeholder="Text for the link (optional)" />
+      <label class="link-dialog__label" for="@(editorId)-link-url">Address</label>
+      <input class="link-dialog__input" id="@(editorId)-link-url" data-editor-element="link-url" type="url" placeholder="https://example.com" required />
+      <p class="link-dialog__hint">Use an http or https address.</p>
+      <div class="link-dialog__actions"><button class="link-dialog__button" id="@(editorId)-link-cancel" data-editor-element="link-cancel" type="button">Cancel</button><button class="link-dialog__button link-dialog__button--primary" type="submit">Insert link</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="table-dialog" id="@(editorId)-table-dialog" data-editor-element="table-dialog" aria-labelledby="@(editorId)-table-dialog-title">
+    <form class="table-dialog__form" id="@(editorId)-table-form" data-editor-element="table-form">
+      <h2 class="table-dialog__title" id="@(editorId)-table-dialog-title" data-editor-element="table-dialog-title">Edit table</h2>
+      <p class="table-dialog__hint" id="@(editorId)-table-dimensions" data-editor-element="table-dimensions"></p>
+      <div class="table-dialog__controls" role="group" aria-label="Table structure">
+        <button class="table-dialog__button" type="button" data-table-action="column-left">Column left</button>
+        <button class="table-dialog__button" type="button" data-table-action="column-right">Column right</button>
+        <button class="table-dialog__button" type="button" data-table-action="row-above">Row above</button>
+        <button class="table-dialog__button" type="button" data-table-action="row-below">Row below</button>
+        <button class="table-dialog__button" type="button" data-table-action="delete-column">Delete column</button>
+        <button class="table-dialog__button" type="button" data-table-action="delete-row">Delete row</button>
+      </div>
+      <div class="table-dialog__scroll"><table class="table-dialog__grid" id="@(editorId)-table-cells" data-editor-element="table-cells" aria-label="Table cells"></table></div>
+      <p class="table-dialog__hint" id="@(editorId)-table-selection" data-editor-element="table-selection" role="status"></p>
+      <p class="table-dialog__hint">The first row contains column headings. Cell text supports Markdown formatting.</p>
+      <div class="table-dialog__actions"><button class="table-dialog__button" id="@(editorId)-table-cancel" data-editor-element="table-cancel" type="button">Cancel</button><button class="table-dialog__button table-dialog__button--primary" type="submit">Save table</button></div>
+    </form>
+  </dialog>
+</section>
