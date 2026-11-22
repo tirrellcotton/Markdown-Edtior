@@ -7,12 +7,12 @@ A toolbar-only, two-pane Markdown editor built with **ASP.NET Core MVC 10**, **T
 Install a .NET SDK that supports .NET 10 and Node.js 22 or newer. From the repository root:
 
 ```powershell
-npm.cmd ci
+npm.cmd --prefix MarkdownEditor.Web ci
 dotnet build MarkdownEditor.slnx
 dotnet run --project MarkdownEditor.Web
 ```
 
-Open **http://localhost:5100**. On macOS/Linux, use `npm` instead of `npm.cmd`. `dotnet build` and `dotnet run` rebuild frontend assets automatically; restore npm dependencies first. `npm run build` performs a standalone TypeScript check and frontend build.
+Open **http://localhost:5100**. On macOS/Linux, use `npm` instead of `npm.cmd`. `dotnet build` and `dotnet run` rebuild frontend assets automatically; restore npm dependencies first. `npm --prefix MarkdownEditor.Web run build` performs a standalone TypeScript check and frontend build.
 
 Open `MarkdownEditor.slnx` in a current Visual Studio or Rider version for solution-based development.
 
@@ -22,6 +22,11 @@ Open `MarkdownEditor.slnx` in a current Visual Studio or Rider version for solut
 MarkdownEditor.slnx
 MarkdownEditor.Web/
   MarkdownEditor.Web.csproj
+  package.json               Frontend dependencies and npm scripts
+  package-lock.json          Locked frontend dependencies
+  tsconfig.json              TypeScript configuration
+  build.mjs                  Frontend asset build
+  node_modules/              Installed npm packages (ignored by Git)
   Controllers/               MVC endpoint
   Views/Editor/Index.cshtml   Host page with CSS/JS references
   Views/Shared/_MarkdownEditor.cshtml  Reusable editor partial
@@ -36,7 +41,7 @@ MarkdownEditor.Web/
   wwwroot/lib/               Generated local Bootstrap Icons assets
 ```
 
-The root `package.json`, `tsconfig.json`, and `build.mjs` manage frontend dependencies and compile the web project's TypeScript. Generated assets are ignored by Git and rebuilt for .NET builds and publishing.
+The web project's `package.json`, `tsconfig.json`, and `build.mjs` manage frontend dependencies and compile its TypeScript. Generated assets are ignored by Git and rebuilt for .NET builds and publishing.
 
 ## Embed in another MVC view
 
@@ -115,8 +120,9 @@ Toolbar submissions dispatch a bubbling `markdown-editor:submitted` event on the
 ## Verify
 
 ```powershell
+cd MarkdownEditor.Web
 npx.cmd playwright install chromium
 npm.cmd test
 ```
 
-Tests start the MVC app automatically and cover live rendering, draft recovery, formatting, history, links, unsafe HTML, import/export, and responsive layout. Desktop and phone screenshots are saved under `test-results/`. There is no numeric coverage threshold.
+Tests start the MVC app automatically and cover live rendering, draft recovery, formatting, history, links, unsafe HTML, import/export, and responsive layout. Desktop and phone screenshots are saved under `MarkdownEditor.Web/test-results/`. There is no numeric coverage threshold.

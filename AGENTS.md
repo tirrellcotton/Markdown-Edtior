@@ -6,6 +6,8 @@ The root `MarkdownEditor.slnx` contains `MarkdownEditor.Web/`, an ASP.NET Core M
 
 ## Build, Test, and Development Commands
 
+Run npm and npx commands from `MarkdownEditor.Web/`; run the dotnet commands below from the repository root. Keep npm manifests, frontend build configuration, and `node_modules/` inside the web project.
+
 - `npm ci`: install the frontend dependencies from the lockfile.
 - `npm run build`: type-check TypeScript, bundle the editor, and copy Bootstrap Icons locally.
 - `dotnet build`: compile the MVC application and rebuild frontend assets.
