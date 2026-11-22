@@ -27,6 +27,7 @@
 .editor .toolbar__button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 36px; height: 36px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: #3c424c; font-size: 21px; padding: 0; }
 .editor .toolbar__button:hover:not(:disabled) { background: #e8edf5; color: #174da6; }
 .editor .toolbar__button:active:not(:disabled) { background: #dce5f4; }
+.editor .toolbar__button--active, .editor .toolbar__button--active:hover:not(:disabled) { background: #dce5f4; border-color: #a4bce3; color: #174da6; }
 .editor .toolbar__button--download { width: auto; padding: 0 12px; color: #2158b8; background: #eaf0fc; font-size: 17px; }
 .editor .toolbar__button-text { font-size: 14px; font-weight: 500; }
 .editor__panes { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }

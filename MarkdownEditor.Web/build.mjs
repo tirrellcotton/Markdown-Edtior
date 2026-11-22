@@ -1,11 +1,11 @@
 import { build } from 'esbuild';
 import { cp, mkdir, rm } from 'node:fs/promises';
 
-const webRoot = 'MarkdownEditor.Web/wwwroot';
+const webRoot = 'wwwroot';
 await mkdir(`${webRoot}/js`, { recursive: true });
 await mkdir(`${webRoot}/lib/bootstrap-icons`, { recursive: true });
 await build({
-  entryPoints: ['MarkdownEditor.Web/Scripts/editor.ts'],
+  entryPoints: ['Scripts/editor.ts'],
   bundle: true,
   outfile: `${webRoot}/js/editor.js`,
   format: 'esm',

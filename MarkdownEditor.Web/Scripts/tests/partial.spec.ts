@@ -34,9 +34,12 @@ test('keeps two partial instances independent and initializes each once', /** Ve
   await secondSource.selectText();
   await second.getByRole('button', { name: 'Bold', exact: true }).click();
   await expect(secondSource).toHaveValue('**Second editor**');
+  await expect(second.getByRole('button', { name: 'Bold', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(first.getByRole('button', { name: 'Bold', exact: true })).toHaveAttribute('aria-pressed', 'false');
   await expect(firstSource).toHaveValue('# First editor');
   await second.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(secondSource).toHaveValue('Second editor');
+  await expect(second.getByRole('button', { name: 'Bold', exact: true })).toHaveAttribute('aria-pressed', 'false');
   await expect(first.locator('[data-editor-element="markdown-preview"] h1')).toHaveText('First editor');
 
   await secondSource.fill('| A | B |\n| --- | --- |\n| One | Two |');
