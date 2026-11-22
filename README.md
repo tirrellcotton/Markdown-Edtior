@@ -9,7 +9,7 @@ Install a .NET SDK that supports .NET 10 and Node.js 22 or newer. From the repos
 ```powershell
 npm.cmd ci
 dotnet build MarkdownEditor.slnx
-dotnet run --project src/MarkdownEditor.Web
+dotnet run --project MarkdownEditor.Web
 ```
 
 Open **http://localhost:5100**. On macOS/Linux, use `npm` instead of `npm.cmd`. `dotnet build` and `dotnet run` rebuild frontend assets automatically; restore npm dependencies first. `npm run build` performs a standalone TypeScript check and frontend build.
@@ -20,7 +20,7 @@ Open `MarkdownEditor.slnx` in a current Visual Studio or Rider version for solut
 
 ```text
 MarkdownEditor.slnx
-src/MarkdownEditor.Web/
+MarkdownEditor.Web/
   MarkdownEditor.Web.csproj
   Controllers/               MVC endpoint
   Views/Editor/Index.cshtml   Host page with CSS/JS references
