@@ -9,6 +9,7 @@ import { submissionError, submitEditorContent } from './persistence/editor-api';
 import { insertCodeBlock, populateCodeLanguages } from './editing/code-blocks';
 import { activeFormatting, formattingRanges } from './editing/formatting-state';
 import type { FormattingRange } from './editing/formatting-state';
+import { SourceHighlighting } from './rendering/source-highlighting';
 
 export class MarkdownEditor {
   private readonly source: HTMLTextAreaElement;
@@ -23,6 +24,7 @@ export class MarkdownEditor {
   private readonly history: EditorHistory;
   private readonly tableTools: TableTools;
   private readonly storageKey: string;
+  private readonly highlighting: SourceHighlighting;
   private linkSelection = { start: 0, end: 0 };
   private fileName = 'untitled.md';
   private formatting: FormattingRange[] = [];
@@ -40,6 +42,7 @@ export class MarkdownEditor {
     this.toolbar = this.find('.toolbar', HTMLDivElement);
     this.storageKey = root.dataset.storageKey ?? 'markdown-editor.draft.v1';
     this.source.value = loadDraft(this.storageKey);
+    this.highlighting = new SourceHighlighting(this.source);
     this.history = new EditorHistory(this.snapshot());
     this.tableTools = new TableTools(root, this.source, this.applyEdit.bind(this));
     populateCodeLanguages(this.find('[data-editor-element="code-language"]', HTMLSelectElement));
@@ -84,6 +87,7 @@ export class MarkdownEditor {
   private refresh(): void {
     renderPreview(this.preview, this.source.value);
     this.formatting = formattingRanges(this.source.value);
+    this.highlighting.render(this.formatting);
     const words = this.source.value.trim().match(/\S+/g)?.length ?? 0;
     this.find('[data-editor-element="word-count"]', HTMLSpanElement).textContent = `${words} ${words === 1 ? 'word' : 'words'}`;
     this.find('[data-editor-element="character-count"]', HTMLSpanElement).textContent = `${this.source.value.length} characters`;

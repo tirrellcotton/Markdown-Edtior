@@ -18,8 +18,11 @@ Open `MarkdownEditor.slnx` in a current Visual Studio or Rider version for solut
 
 ## Project layout
 
+For a detailed walkthrough of the server, editor modules, rendering, tables, persistence, security, build pipeline, and tests, see the [architectural design document](Documentation/architecture.md). It includes diagrams and links to the implementation.
+
 ```text
 MarkdownEditor.slnx
+Documentation/architecture.md  Detailed architecture and code guide
 MarkdownEditor.Web/
   MarkdownEditor.Web.csproj
   package.json               Frontend dependencies and npm scripts
@@ -56,6 +59,7 @@ Load these references once in the host view or its layout, as shown in `Views/Ed
 ```cshtml
 <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/css/editor.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/editor-syntax.css" asp-append-version="true" />
 <script type="module" src="~/js/editor.js" asp-append-version="true"></script>
 ```
 
@@ -116,6 +120,14 @@ const receipt = await submitEditorContent(editor);
 ```
 
 Toolbar submissions dispatch a bubbling `markdown-editor:submitted` event on their editor root with the controller response in `event.detail`. Duplicate clicks are blocked while a request is pending; request failures appear in the footer and leave the document intact.
+
+## Markdown source colors
+
+Fenced code blocks have a continuous, full-width tinted background covering the opening fence, code lines, and closing fence. Inline code keeps its compact text background. Both use `--syntax-code-background` in `editor-syntax.css`.
+
+The editable source pane highlights headings, bold text, italics, strikethrough, links, quotes, list markers, inline code, and fenced code blocks while keeping Markdown characters visible. Native selection, keyboard shortcuts, undo, and draft persistence remain available. The decorative highlighting layer is hidden from assistive technology; forced-color mode uses the native text colors.
+
+Customize source colors in `MarkdownEditor.Web/wwwroot/css/editor-syntax.css`. Its `.editor` variables include `--syntax-heading`, `--syntax-bold`, `--syntax-italic`, `--syntax-strikethrough`, `--syntax-link`, `--syntax-code`, and `--syntax-code-background`. Override these variables on a host editor to theme individual instances. Keep the mirror and textarea font metrics synchronized when changing typography. These settings affect the source pane; preview styles remain in `editor.css`.
 
 ## Verify
 
