@@ -102,7 +102,8 @@ Multiple readers can coexist with editors. Server-rendered readers initialize au
 
 ## Editing
 
-- Heading levels, bold, italic, strikethrough, lists, tasks, quotes, links, code, and dividers.
+- Heading levels, bold, italic, strikethrough, lists, tasks, quotes, links, images, code, and dividers.
+- **Insert image** (the picture toolbar icon) opens a dialog for an absolute HTTP/HTTPS image URL and an optional image description (alt text). Selected text becomes the suggested description and is replaced by `![description](url)`; with no selection, the image is inserted at the caret. An omitted description defaults to `Image`. The formatted preview displays the image and scales it to fit the pane. Insertion supports undo/redo and draft recovery; Cancel or Escape preserves the document and selection. Images load directly from their URLs; the editor does not upload image files.
 - The **Code block** dropdown inserts a fenced block for one of 29 common languages and formats, including C#, TypeScript, JavaScript, SQL, Python, JSON, PowerShell, and Dockerfile. Existing selected text becomes the code body; otherwise, an editable placeholder is selected. Each insertion supports undo.
 - Table toolbar with a 5×5 size picker. Place the source cursor in a table, then choose **Edit table** for **Insert**, **Select**, or **Delete** options. Insert columns left/right or rows above/below the current cell; select or delete the table, current column, or current row.
 - **Edit cell contents** opens a visual grid. Select actions highlight the requested region in this grid. Edit cell Markdown or change structure, then save as one undoable change; Cancel discards changes. Row counts include the required Markdown header. Deleting a header promotes the next row; deleting the final row or column removes the table.
