@@ -24,6 +24,8 @@ Keep functions focused and control flow straightforward. Prefer guard clauses an
 
 ## Testing Guidelines
 
+Update `README.md` in the same change whenever features, configuration, dependencies, setup/build/test commands, or project structure change. Before finishing, check that its affected instructions and examples match the implemented behavior.
+
 Use Playwright integration tests named `*.spec.ts` for live rendering, formatting, keyboard interaction, persistence, and unsafe Markdown. No numeric coverage target is established. Verify changed behavior and responsive layout before submitting changes.
 
 ## Commit & Pull Request Guidelines
