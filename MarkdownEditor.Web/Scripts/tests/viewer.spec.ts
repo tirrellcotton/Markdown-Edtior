@@ -29,10 +29,19 @@ test('sanitizes Markdown and safely transports Razor model text', /** Rejects ex
   expect(await page.evaluate(/** Checks whether an injected script executed. */ () => 'viewerUnsafe' in window)).toBe(false);
 });
 
-test('handles empty content without recovering an editor draft', /** Verifies a missing model produces the viewer empty state. */ async ({ page }) => {
+test('loads the documentation sample by default in Debug', /** Verifies the controller reads and formats the sample document. */ async ({ page }) => {
+  await page.goto('/Editor/Viewer');
+  const viewer = page.getByRole('region', { name: 'Markdown document' });
+  await expect(viewer.getByRole('heading', { name: 'Markdown viewer sample', exact: true })).toBeVisible();
+  await expect(viewer.getByRole('table')).toBeVisible();
+  await expect(viewer.locator('pre code')).toHaveCount(3);
+  await expect(viewer.getByRole('checkbox').first()).toBeDisabled();
+});
+
+test('handles explicitly empty content without recovering an editor draft', /** Verifies an empty query overrides the Debug sample and produces the empty state. */ async ({ page }) => {
   await page.goto('/');
   await page.getByRole('textbox', { name: 'Markdown content' }).fill('# Private draft');
-  await page.goto('/Editor/Viewer');
+  await page.goto('/Editor/Viewer?markdown=');
   const viewer = page.locator('[data-markdown-viewer]');
   await expect(viewer).toHaveClass(/editor__preview--empty/);
   await expect(viewer).toBeEmpty();

@@ -78,7 +78,9 @@ Server-rendered partials initialize automatically. After dynamically adding part
 
 ## Read-only Markdown viewer
 
-Open `/Editor/Viewer?markdown=%23%20Hello` to display formatted Markdown through `EditorController.Viewer`. With no Markdown supplied, the page shows an empty state. This GET action is a host example for short text; applications can load larger or private documents in their own controller and pass the Markdown string directly to the view model.
+Open `/Editor/Viewer?markdown=%23%20Hello` to display formatted Markdown through `EditorController.Viewer`. In **Debug builds**, opening `/Editor/Viewer` without a `markdown` query parameter reads and displays [Documentation/viewer-sample.md](Documentation/viewer-sample.md). The build copies this sample into the output's `Documentation` folder. This behavior uses the build configuration, independently of `ASPNETCORE_ENVIRONMENT`, and is excluded from Release builds. Release builds show an empty state when no Markdown is supplied. An explicit `?markdown=` shows an empty document in either configuration, and supplied text overrides the sample.
+
+This GET action is a host example for short text; applications can load larger or private documents in their own controller and pass the Markdown string directly to the view model.
 
 Embed the reader in any MVC view with a string model:
 
