@@ -23,6 +23,7 @@ For a detailed walkthrough of the server, editor modules, rendering, tables, per
 ```text
 MarkdownEditor.slnx
 Documentation/architecture.md  Detailed architecture and code guide
+Documentation/viewer-sample.md Debug viewer sample document
 MarkdownEditor.Web/
   MarkdownEditor.Web.csproj
   package.json               Frontend dependencies and npm scripts
@@ -30,16 +31,19 @@ MarkdownEditor.Web/
   tsconfig.json              TypeScript configuration
   build.mjs                  Frontend asset build
   node_modules/              Installed npm packages (ignored by Git)
-  Controllers/               MVC endpoint
+  Controllers/               Editor, viewer, and submission endpoints
   Views/Editor/Index.cshtml   Host page with CSS/JS references
+  Views/Editor/Viewer.cshtml  Read-only viewer host page
   Views/Shared/_MarkdownEditor.cshtml  Reusable editor partial
-  Scripts/                   TypeScript entry point and editor coordinator
-    editing/                 Formatting, history, and code block insertion
+  Views/Shared/_MarkdownViewer.cshtml  Reusable reader partial (string model)
+  Scripts/                   Editor/viewer entry points and editor coordinator
+    editing/                 Formatting, history, image dialog, code insertion
     tables/                  Table parsing, operations, picker, and dialog
     rendering/               Preview, highlighting, and content extraction
     persistence/             Browser drafts and server submission
     tests/                   Playwright browser scenarios
   wwwroot/css/               BEM styles
+  wwwroot/images/            Local viewer sample image
   wwwroot/js/                Generated editor and viewer bundles
   wwwroot/lib/               Generated local Bootstrap Icons assets
 ```
@@ -162,4 +166,4 @@ npx.cmd playwright install chromium
 npm.cmd test
 ```
 
-Tests start the MVC app automatically and cover live rendering, draft recovery, formatting, history, links, unsafe HTML, import/export, and responsive layout. Desktop and phone screenshots are saved under `MarkdownEditor.Web/test-results/`. There is no numeric coverage threshold.
+Tests start the MVC app automatically and cover live rendering, draft recovery, formatting, history, links, image insertion and loading, unsafe HTML, import/export, reusable readers, the Debug viewer sample, and responsive layout. The default test server uses a Debug build; when reusing an existing server, ensure it serves the current Debug build. Desktop and phone screenshots are saved under `MarkdownEditor.Web/test-results/`. There is no numeric coverage threshold.

@@ -2,7 +2,7 @@
 
 This document explains the implemented application, its data flow, and the responsibilities of its source files. It is intended as a guided tour for someone learning the project as well as a reference for future changes.
 
-**Scope:** the working tree on 2026-11-23, including the source syntax highlighting and continuous fenced-code backgrounds on `feature/markdown-syntax-highlighting`. Some of that implementation was uncommitted when this document was written. Descriptions below reflect that code, not just the latest commit on `development`.
+**Scope:** the current implementation, including source syntax highlighting, image URL insertion, and the reusable read-only viewer with its Debug sample. Keep this guide and the README aligned with implementation changes as required by [AGENTS.md](../AGENTS.md).
 
 Diagrams use Mermaid syntax. Open this file in a Markdown viewer with Mermaid support to see them rendered. The prose also explains each diagram so the document remains useful in a plain text editor.
 
@@ -31,9 +31,9 @@ Diagrams use Mermaid syntax. Open this file in a Markdown viewer with Mermaid su
 
 ## 1. Purpose and architectural shape
 
-Markdown Editor is a toolbar-only Markdown workspace. A native text area holds Markdown source; a neighboring pane displays rendered HTML. Formatting buttons change the source text. Users can manipulate tables in a dialog, insert language-tagged code fences, open local files, download Markdown, restore browser drafts, and explicitly submit content to the server.
+Markdown Editor is a toolbar-only Markdown workspace. A native text area holds Markdown source; a neighboring pane displays rendered HTML. Formatting buttons change the source text. Users can manipulate tables in a dialog, insert images by URL and language-tagged code fences, open local files, download Markdown, restore browser drafts, and explicitly submit content to the server. A separate read-only viewer renders a supplied Markdown string without editor controls or browser drafts.
 
-The application is one ASP.NET Core MVC project targeting .NET 10. Its interactive behavior is written in strict TypeScript and bundled into one browser ES module. It uses direct DOM APIs rather than a frontend component framework. There is no server-side document domain service, database, repository layer, authentication workflow, or collaborative synchronization implementation in this project.
+The application is one ASP.NET Core MVC project targeting .NET 10. Its browser behavior is written in strict TypeScript and bundled into separate editor and viewer ES modules. Both use the same rendering implementation. It uses direct DOM APIs rather than a frontend component framework. There is no server-side document domain service, database, repository layer, authentication workflow, or collaborative synchronization implementation in this project.
 
 The main design choice is to treat **Markdown source as the document of record**. Preview HTML, syntax decoration, formatting state, counts, and exported plain text are derived from that source. Editing the preview does not update Markdown; it is a rendering surface, not a second editor.
 
@@ -41,6 +41,9 @@ The main design choice is to treat **Markdown source as the document of record**
 flowchart LR
   User[User] --> Editor[Browser editor]
   Server[ASP.NET Core MVC] -->|HTML, CSS, JavaScript, fonts| Editor
+  Server -->|Viewer host and Markdown model| Reader[Read-only viewer]
+  Images[Image URLs] -->|Browser image requests| Editor
+  Images -->|Browser image requests| Reader
   Editor <-->|Draft string| Storage[(Browser localStorage)]
   Files[Local files] -->|Open file| Editor
   Editor -->|Markdown download| Files
@@ -60,19 +63,24 @@ AGENTS.md
 README.md
 Documentation/
   architecture.md
+  viewer-sample.md                   Markdown loaded by the Debug viewer
+  images/                            Viewer review screenshots
 docs/screenshots/                    Existing reference screenshots
 MarkdownEditor.Web/
   Program.cs                        Server composition and middleware
-  Controllers/EditorController.cs    Page, submission, and error actions
+  Controllers/EditorController.cs    Editor, viewer, submission, error actions
   Models/MarkdownSubmission.cs       JSON validation contract
   Views/Editor/Index.cshtml          Complete host HTML document
+  Views/Editor/Viewer.cshtml         Complete read-only host document
   Views/Shared/_MarkdownEditor.cshtml
+  Views/Shared/_MarkdownViewer.cshtml
   Views/_ViewImports.cshtml          Razor imports/tag helper setup
   Scripts/
     editor.ts                       Bundle entry and public API
+    viewer.ts                       Reader entry and idempotent initialization
     markdown-editor.ts              One editor instance's coordinator
     dom.ts                          Typed required-element lookup
-    editing/                        Source transforms and history
+    editing/                        Source transforms, image dialog, history
     rendering/                      Preview, source colors, extraction
     persistence/                    localStorage and Axios submission
     tables/                         Table model, operations, and controls
@@ -80,7 +88,9 @@ MarkdownEditor.Web/
     playwright.config.ts            Browser/server test configuration
   wwwroot/css/editor.css            Layout, toolbar, dialogs, preview theme
   wwwroot/css/editor-syntax.css     Source syntax colors and mirror layers
-  wwwroot/js/                       Generated bundle and source map
+  wwwroot/css/viewer.css            Container sizing and viewer empty state
+  wwwroot/images/viewer-sample.svg  Local sample landscape
+  wwwroot/js/                       Generated editor/viewer bundles and maps
   wwwroot/lib/                      Copied Bootstrap Icons files
   package.json / package-lock.json  Frontend scripts and dependencies
   tsconfig.json                     TypeScript compiler policy
@@ -95,13 +105,15 @@ MarkdownEditor.Web/
 | Module | Responsibility | Main output or side effect |
 |---|---|---|
 | [`editor.ts`](../MarkdownEditor.Web/Scripts/editor.ts) | Finds component roots, initializes each once, exports integration functions | `MarkdownEditor` instances and public functions |
+| [`viewer.ts`](../MarkdownEditor.Web/Scripts/viewer.ts) | Renders each server-supplied reader root once | Read-only document DOM; exported `initializeMarkdownViewers` |
 | [`markdown-editor.ts`](../MarkdownEditor.Web/Scripts/markdown-editor.ts) | Coordinates controls, events, refreshes, dialogs, file operations, and sending | Changes to source and derived UI |
 | [`dom.ts`](../MarkdownEditor.Web/Scripts/dom.ts) | Checks that required elements exist and have the expected DOM type | Typed element or an explicit error |
 | [`formatting.ts`](../MarkdownEditor.Web/Scripts/editing/formatting.ts) | Computes source-text transformations | `TextEdit` values |
 | [`formatting-state.ts`](../MarkdownEditor.Web/Scripts/editing/formatting-state.ts) | Maps parsed emphasis back to source offsets | `FormattingRange[]` and active styles |
 | [`history.ts`](../MarkdownEditor.Web/Scripts/editing/history.ts) | Stores document and selection snapshots | Undo/redo snapshots |
 | [`code-blocks.ts`](../MarkdownEditor.Web/Scripts/editing/code-blocks.ts) | Defines language choices and inserts safe backtick fences | Language options and `TextEdit` |
-| [`preview.ts`](../MarkdownEditor.Web/Scripts/rendering/preview.ts) | Parses and sanitizes Markdown and decorates preview links | Safe preview DOM |
+| [`image-dialog.ts`](../MarkdownEditor.Web/Scripts/editing/image-dialog.ts) | Owns image form, URL validation, and saved selection | Escaped image Markdown through an undoable `TextEdit` |
+| [`preview.ts`](../MarkdownEditor.Web/Scripts/rendering/preview.ts) | Parses and sanitizes Markdown, decorates links, and optionally disables controls | Editor preview or read-only document DOM |
 | [`code-highlighting.ts`](../MarkdownEditor.Web/Scripts/rendering/code-highlighting.ts) | Highlights programming languages within preview code blocks | Sanitized highlighting spans |
 | [`source-highlighting.ts`](../MarkdownEditor.Web/Scripts/rendering/source-highlighting.ts) | Mirrors source with syntax colors and full-width code backgrounds | Decorative layers beside the native input |
 | [`document-content.ts`](../MarkdownEditor.Web/Scripts/rendering/document-content.ts) | Produces Markdown, readable text, and HTML from one snapshot | `MarkdownContent` |
@@ -112,7 +124,7 @@ MarkdownEditor.Web/
 | [`table-tools.ts`](../MarkdownEditor.Web/Scripts/tables/table-tools.ts) | Owns the picker and contextual operations | One committed source edit per operation |
 | [`table-dialog.ts`](../MarkdownEditor.Web/Scripts/tables/table-dialog.ts) | Owns the modal cell-editing form and temporary table edits | Save/cancel callbacks |
 
-The coordinator calls focused modules rather than requiring each feature to know about local storage, undo, and preview internals. In particular, table controls receive an `applyEdit` callback. That callback is their route into the document update lifecycle.
+The coordinator calls focused modules rather than requiring each feature to know about local storage, undo, and preview internals. Table controls and `ImageDialog` receive an `applyEdit` callback as their route into the document update lifecycle.
 
 ## 3. Server application and request handling
 
@@ -137,12 +149,15 @@ HSTS is configured outside Development, but this pipeline does not call `UseHttp
 | Action | Request | Behavior |
 |---|---|---|
 | `Index` | Conventional page request, normally `GET /` | Returns `Views/Editor/Index.cshtml` |
+| `Viewer` | `GET /Editor/Viewer?markdown=...` | Returns `Views/Editor/Viewer.cshtml` with the supplied string; loads the sample by default in Debug builds |
 | `Submit` | `POST /Editor/Submit` | Validates antiforgery and JSON model, checks model state and null body, returns an acknowledgment |
 | `Error` | Error-handler target `/Editor/Error` | Returns a Problem response explaining that the editor could not be loaded |
 
 [`EditorController`](../MarkdownEditor.Web/Controllers/EditorController.cs) has no injected persistence dependency. Its `Submit` method contains the explicit integration point for application-specific storage. The existing action validates shape and lengths; it does not establish that submitted HTML or plain text faithfully represents the submitted Markdown.
 
 ### Configuration
+
+The viewer's sample behavior is controlled by the C# `DEBUG` compilation symbol, independently of the ASP.NET Core environment name. With no `markdown` query parameter, a Debug build asynchronously reads `Documentation/viewer-sample.md` from `AppContext.BaseDirectory`, honoring request cancellation. The project copies that file into Debug build/publish output. An explicit `?markdown=` displays an empty document, and supplied text overrides the sample. Release builds exclude sample loading and default to an empty document. The GET endpoint is a short-text host example; application-specific controllers can load documents and pass their Markdown directly as a view model.
 
 [`appsettings.json`](../MarkdownEditor.Web/appsettings.json) sets the default logging level to Information, the ASP.NET Core category to Warning, and `AllowedHosts` to `*`. [`launchSettings.json`](../MarkdownEditor.Web/Properties/launchSettings.json) configures the local Development profile at `http://localhost:5100` and requests browser launch. Neither file contains a database connection string.
 
@@ -170,7 +185,13 @@ At render time, the partial creates a GUID-based editor ID. Labels, dialog refer
 
 JavaScript generally finds controls by `data-editor-element`, scoped to the editor root. This is separate from CSS presentation classes and generated IDs. Renaming one of those data values requires updating its TypeScript lookup and tests. [`element()`](../MarkdownEditor.Web/Scripts/dom.ts) throws when a required element is missing or has the wrong DOM type, making a broken markup contract visible during initialization.
 
-The component contains a toolbar, source and preview sections, status footer, hidden file input, link dialog, table picker, and table dialog. Table-size buttons, language options, and table-cell inputs are populated by JavaScript.
+The component contains a toolbar, source and preview sections, status footer, hidden file input, link and image dialogs, table picker, and table dialog. The `image` toolbar command opens the image dialog using the same visual classes as the link dialog. Table-size buttons, language options, and table-cell inputs are populated by JavaScript.
+
+### Read-only partial contract
+
+[`_MarkdownViewer.cshtml`](../MarkdownEditor.Web/Views/Shared/_MarkdownViewer.cshtml) accepts a string model and contains no resource imports. Its root has `data-markdown-viewer`, `.markdown-viewer`, and `.editor__preview`, with a named, keyboard-focusable region. A hidden textarea marked `data-viewer-source` carries Razor-encoded Markdown until initialization; a `noscript` message explains the JavaScript requirement. The source textarea is replaced by rendered content, so the initialized partial exposes no Markdown source input.
+
+[`Viewer.cshtml`](../MarkdownEditor.Web/Views/Editor/Viewer.cshtml) supplies a full-height host and loads `editor.css`, `viewer.css`, and `viewer.js`. Embedded hosts load those resources once and give their containing element a height. The partial fills that width and height and scrolls internally. It needs neither Bootstrap Icons nor source-highlighting CSS, antiforgery fields, or storage keys.
 
 ## 5. Browser startup and instance ownership
 
@@ -191,14 +212,16 @@ sequenceDiagram
   Entry->>Instance: Construct for each uninitialized root
   Instance->>Draft: Read instance draft key
   Draft-->>Instance: Draft or welcome fallback
-  Instance->>Instance: Create source mirror, history, table tools
+  Instance->>Instance: Create source mirror, history, table tools, image dialog
   Instance->>Instance: Populate languages and bind events
   Instance->>Instance: Refresh derived UI and save draft
 ```
 
-Each `MarkdownEditor` owns its element references, history object, table controls, source highlighting object, filename, link selection, and cached formatting ranges. It does not share those fields with another instance.
+Each `MarkdownEditor` owns its element references, history object, table controls, image dialog, source highlighting object, filename, link selection, and cached formatting ranges. It does not share those fields with another instance.
 
 For multiple editors, choose distinct storage keys. Their UI state is independent, but two instances using the default `markdown-editor.draft.v1` key write the same browser draft slot. Dynamically inserting a new partial also requires an explicit `initializeMarkdownEditors(newRoot)` call; there is no mutation observer that automatically discovers new roots.
+
+The independent `viewer.ts` entry calls `initializeMarkdownViewers()` on module load. Its own WeakSet prevents duplicate rendering. Initialization reads each root's encoded source textarea and calls `renderPreview(root, markdown, true)`. It creates no editor, history, syntax mirror, draft storage, or submission handlers. Dynamically inserted readers require `initializeMarkdownViewers(container)`; the container itself is included when it is a reader root. Readers and editors can coexist on one page.
 
 ## 6. Document state and editing lifecycle
 
@@ -214,6 +237,8 @@ The text area's `value` is the authoritative document. The application does not 
 | Preview HTML | Preview DOM | Rebuilt on refresh |
 | Source syntax spans/backgrounds | `SourceHighlighting` | Rebuilt/repositioned from source |
 | Link insertion selection | `MarkdownEditor.linkSelection` | Until dialog completes or is reopened |
+| Image insertion selection and form | `ImageDialog` | Until insertion/cancellation or the next opening |
+| Read-only document | Viewer DOM, initially supplied by Razor model | Rendered once per initialized reader root |
 | Table edit model | `TableTools` / `TableDialog` | Temporary context for an operation |
 | Download filename | `MarkdownEditor.fileName` | Defaults to `untitled.md`; changes on successful file open |
 | Draft string | `localStorage` | Across reloads until browser storage changes |
@@ -273,6 +298,14 @@ Ctrl on Windows/Linux or Command on macOS is used for B (bold), I (italic), K (l
 
 Opening the link dialog captures the source selection before focus leaves the editor. The address must start with HTTP or HTTPS, in addition to the native URL-input validation. Save restores the original selection and inserts the computed Markdown; Cancel and Escape restore focus and selection without changing the document.
 
+### Image insertion
+
+The toolbar's `image` command opens [`ImageDialog`](../MarkdownEditor.Web/Scripts/editing/image-dialog.ts). The dialog stores the source selection, suggests the selected text as the image description, clears the URL field, and focuses it. All element lookups and event handlers belong to the current editor root.
+
+The required URL input uses native validation. `imageAddress()` additionally requires an absolute HTTP/HTTPS prefix and parses the address with `new URL()`; malformed addresses and other protocols are rejected with an editable validation message. Submission normalizes description whitespace, defaults an omitted description to `Image`, and builds `![description](url)` using `linkMarkdown()` for bracket/backslash escaping and URL-parenthesis encoding.
+
+The dialog restores the original selection, then passes `replaceRange()` to the coordinator's `applyEdit` callback. This replaces selected text or inserts at the caret, records one undo step, refreshes the preview, and saves the browser draft. Cancel and Escape restore selection without an edit. Images are referenced by URL; there is no file upload or image proxy. Browser image loading and failures follow the referenced resource's availability.
+
 ### Active toolbar state
 
 [`formatting-state.ts`](../MarkdownEditor.Web/Scripts/editing/formatting-state.ts) uses Marked's GFM lexer to identify `strong`, `em`, and `del` tokens. It recursively visits nested token lists and table cells, while code and literal HTML are left out of emphasis interpretation.
@@ -310,7 +343,7 @@ History is held in memory, separately from the local draft. Reloading restores t
 
 [`renderPreview()`](../MarkdownEditor.Web/Scripts/rendering/preview.ts) parses the source synchronously with `marked.parse`, using GFM and `breaks: false`. GFM supplies features such as tables, task lists, and strikethrough. An ordinary newline in prose is not configured to become an automatic hard line break.
 
-The generated HTML is passed through DOMPurify before insertion into the preview. The configuration enables the HTML profile, forbids `style`, `form`, and `iframe` elements, forbids inline style attributes, and enables named-property sanitization. Allowed links are then given `target="_blank"` and `rel="noopener noreferrer"`.
+The generated HTML is passed through DOMPurify before insertion into the preview. The configuration enables the HTML profile, forbids `style`, `form`, and `iframe` elements, forbids `style` and `contenteditable` attributes, and enables named-property sanitization. Allowed links are then given `target="_blank"` and `rel="noopener noreferrer"`.
 
 ```mermaid
 flowchart LR
@@ -330,6 +363,23 @@ If a known language is declared, it highlights with that language and `ignoreIll
 The source-code theme and preview-code theme are independent. The preview currently uses a dark code-block background with language-token colors in `editor.css`. This does not imply that source code inside Markdown fences receives the same programming-language token colors.
 
 The empty-preview class is toggled using whether the Markdown trims to an empty string. The visible empty message is supplied by CSS rather than inserting document content.
+
+### Reader rendering and images
+
+The optional `readOnly` argument defaults to `false`. The viewer passes `true`, which additionally disables rendered `input`, `button`, `select`, and `textarea` controls. Task-list checkboxes remain visible but disabled. Links retain normal navigation behavior. The viewer's empty message is “No Markdown content to display.”
+
+```mermaid
+flowchart LR
+  Model[Razor string model] --> Encoded[Encoded hidden textarea]
+  Encoded --> Init[initializeMarkdownViewers]
+  Init --> Render[renderPreview with readOnly enabled]
+  Render --> Sanitize[Marked and DOMPurify]
+  Sanitize --> Decorate[Links and code highlighting]
+  Decorate --> Disable[Disable embedded form controls]
+  Disable --> Reader[Read-only document DOM]
+```
+
+Markdown image syntax produces sanitized `img` elements in both the editor preview and reader; image display uses the same rendering path. `.editor__preview img` constrains width to the container and preserves aspect ratio with `height: auto`. Relative URLs resolve against the host page, while absolute URLs load from their specified origin. The Debug sample references the local [`viewer-sample.svg`](../MarkdownEditor.Web/wwwroot/images/viewer-sample.svg), so it can demonstrate image display without a third-party service.
 
 ## 10. Editable source highlighting
 
@@ -527,6 +577,9 @@ The important boundary is untrusted Markdown or submitted JSON crossing into HTM
 | Code text to preview spans | Text extraction, Highlight.js, span-only sanitization | Code is interpreted for colors, not executed |
 | Source text to syntax mirror | Highlight.js escaping and DOMPurify; strike uses text nodes | Source markup remains text in the mirror |
 | Link dialog to Markdown | HTTP/HTTPS validation and escaping | Dialog rejects executable protocols; direct source still goes through preview sanitization |
+| Image dialog to Markdown | Absolute HTTP/HTTPS validation, URL parsing, label escaping | Dialog limits inserted addresses; the browser fetches the image directly |
+| Razor model to reader | Razor encoding, then the shared sanitized renderer | Model text cannot break out of the hidden source textarea as executable HTML |
+| HTML controls to reader | Removes `contenteditable`; disables embedded form controls | Reader has no editing workflow; links and image requests remain active |
 | Preview links to new tabs | `noopener noreferrer` | New tabs do not receive an opener reference from these links |
 | Browser to POST endpoint | Same-origin check plus antiforgery token | Restricts intended submission destination and checks request authenticity |
 | JSON to controller model | Required fields, string limits, body limit | Validates request structure/size; does not sanitize HTML server-side |
@@ -536,7 +589,7 @@ The example server must continue treating all client fields as untrusted. A call
 
 Antiforgery does not provide authentication, authorization, or per-user document ownership. Those concerns must be designed if this editor becomes part of a multi-user application. The current code does not implement them.
 
-Draft content is not automatically transmitted to the application's server while typing. However, allowed Markdown images can reference external addresses and cause the browser to fetch them when previewed; links can navigate externally when clicked. This is not a network-isolated editor or an offline-installed application. There is no service worker in the repository.
+Draft content is not automatically transmitted to the application's server while typing. However, allowed Markdown images can reference external addresses and cause the browser to fetch them in either preview or reader; links can navigate externally when clicked. Viewer query text is sent to the server as part of the GET URL. Private or larger documents should be supplied through an application-specific controller/model rather than the example query-string host. This is not a network-isolated editor or an offline-installed application. There is no service worker in the repository.
 
 ## 15. Styling, accessibility, and responsive layout
 
@@ -548,7 +601,9 @@ At widths up to 900px, toolbar gaps/padding tighten, text labels and hints reduc
 
 The preview defines its own `--preview-*` tokens, while source syntax defines `--syntax-*` tokens in `editor-syntax.css`. Keep those responsibilities separate when changing a theme. The component declares a light color scheme; there is no theme-toggle state machine.
 
-Accessible behavior includes labels for source/preview controls and dialogs, icon buttons with accessible names, a toolbar role, `aria-pressed` for emphasis, `aria-expanded` for picker/menu state, footer status announcements, labeled cell inputs, and native modal dialogs. Focus and source selection are restored when link and table dialogs are dismissed. The picker can be operated with the keyboard.
+Accessible behavior includes labels for source/preview controls and dialogs, icon buttons with accessible names, a toolbar role, `aria-pressed` for emphasis, `aria-expanded` for picker/menu state, footer status announcements, labeled cell inputs, and native modal dialogs. Focus and source selection are restored when link, image, and table dialogs are dismissed. The image dialog accepts an alternative-text description. The picker can be operated with the keyboard.
+
+The reader reuses `.editor__preview` typography and image styles outside an `.editor` root. [`viewer.css`](../MarkdownEditor.Web/wwwroot/css/viewer.css) adds full-container sizing, a focus outline, light color scheme, accent token, and a reader-specific empty message. It supplies no toolbar or source pane; container scrolling handles long documents at desktop and phone widths.
 
 In forced-color mode, CSS hides the source mirror and restores system text and caret colors to the native textarea. Decorative backgrounds remain a presentation concern rather than document content. These features are implementation details and automated checks, not a claim of a completed accessibility certification.
 
@@ -581,7 +636,7 @@ flowchart LR
   Modules --> Npm
   Npm --> TSC[tsc --noEmit]
   TSC --> Build[build.mjs and esbuild]
-  Build --> Bundle[wwwroot/js/editor.js and source map]
+  Build --> Bundle[editor.js and viewer.js with source maps]
   Build --> Icons[wwwroot/lib/bootstrap-icons]
   Bundle --> Publish[.NET build and publish assets]
   Icons --> Publish
@@ -589,9 +644,11 @@ flowchart LR
 
 [`tsconfig.json`](../MarkdownEditor.Web/tsconfig.json) targets ES2022, uses ESNext modules with bundler resolution, includes DOM libraries, and enables strict checking plus unused-local and unused-parameter checks. It includes all TypeScript beneath `Scripts`, including tests. TypeScript checking itself emits nothing.
 
-[`build.mjs`](../MarkdownEditor.Web/build.mjs) bundles `Scripts/editor.ts` as a minified ES module at `wwwroot/js/editor.js`, emits a source map, and copies the Bootstrap Icons CSS, font files, and license into `wwwroot/lib`. It does not compile or bundle CSS. Host views reference the CSS files directly.
+[`build.mjs`](../MarkdownEditor.Web/build.mjs) bundles `Scripts/editor.ts` and `Scripts/viewer.ts` into separate minified ES modules in `wwwroot/js`, with a source map for each, and copies the Bootstrap Icons CSS, font files, and license into `wwwroot/lib`. Each bundle includes its required rendering code; esbuild code splitting is not enabled. It does not compile or bundle CSS. Host views reference the CSS files directly.
 
 [`MarkdownEditor.Web.csproj`](../MarkdownEditor.Web/MarkdownEditor.Web.csproj) runs the frontend build before ordinary .NET builds, except design-time builds. It selects `npm.cmd` on Windows and `npm` elsewhere. It then refreshes generated static content items for publishing. This matters because generated assets may not exist when MSBuild first evaluates the project.
+
+Its Debug-only content item links `Documentation/viewer-sample.md` from the repository into the output and publish directory, preserving newer copies. Release output does not include this content item. The local SVG under `wwwroot/images` is an ordinary static asset available in both configurations.
 
 The .NET target does not install npm dependencies. Restore them before building. There is also no frontend watch server; changes to TypeScript require rebuilding the bundle. `node_modules`, generated bundle files, and generated third-party assets are not source files to edit by hand.
 
@@ -622,20 +679,24 @@ On macOS/Linux, use `npm` and `npx` without `.cmd`. Publishing generates applica
 
 Reusing a server speeds local runs, but it also means the developer must ensure that a running server serves the intended current build. The configured output directory is the web project's `test-results`; screenshots are captured on failure, and selected tests explicitly save layout screenshots.
 
+The default test server builds Debug. Viewer sample-loading tests require that configuration, including when reusing a server. Release compilation separately verifies that the Debug-only controller path is excluded.
+
 | Suite | Main behavior protected |
 |---|---|
 | `editor.spec.ts` | Live rendering, draft restoration, formatting, history, headings/lists, links, HTML safety, files, layout |
 | `code-blocks.spec.ts` | Language choices, safe code fences, placeholder selection, undo, phone controls |
 | `formatting-state.spec.ts` | Nested emphasis, source selection, ignored literal syntax, toolbar state |
 | `highlighting.spec.ts` | Programming-language code preview, unknown languages, literal HTML code, long lines |
+| `images.spec.ts` | Image URL insertion, loaded image/alt text, URL escaping and validation, caret/selection, undo/redo, drafts, cancellation, independent instances, desktop/phone sizing |
 | `source-highlighting.spec.ts` | Source colors, strike decoration, exact mirrored text, full-width fences, desktop/phone geometry |
 | `partial.spec.ts` | Host resources, labels, multiple independent editors, repeated initialization |
 | `submission.spec.ts` | JSON payload, antiforgery, validation, empty documents, failures, duplicates, edits during send, content extraction |
 | `tables.spec.ts` | Table insertion, editing/canceling, contextual operations, escaped pipes, alignments, adjacent content, phones |
+| `viewer.spec.ts` | Read-only formatting, sanitization, Debug sample, empty-query override, independent embedded readers, loaded images, desktop/phone sizing and scrolling |
 
 There is no numeric coverage requirement and no separate C# unit-test project in this repository. Server behavior is exercised through browser and HTTP interactions in Playwright. These tests establish behavior in the configured Chromium environment; they do not establish browser-matrix compatibility or large-document performance limits.
 
-At the time of writing, the working-tree implementation's latest frontend build and browser run passed all **47 tests**. This is a point-in-time result, not a permanent assertion about future revisions. The architecture-document change itself requires documentation checks rather than another full browser run because it does not change runtime behavior.
+Use the current test run as validation evidence rather than treating a fixed test count in this guide as a lasting guarantee. Documentation-only changes require checking descriptions, commands, diagrams, and local links against the implementation; they do not require another full browser run when runtime behavior is unchanged.
 
 ## 18. Performance, lifecycle, and current limitations
 
@@ -655,11 +716,12 @@ The code initializes instances once but does not expose a destroy/dispose API. `
 
 - One draft string per configured key; no document list, versioned server history, or multi-user collaboration.
 - No durable server persistence, authentication, authorization, retry queue, or conflict resolution.
+- Images are URL references with no upload, proxy, cache, or custom load-error UI.
 - No cross-tab draft reconciliation and no persistence of undo, filename, or selection across reloads.
 - Table editing locates top-level tables and serializes them to normalized source; it is not a lossless Markdown formatter.
 - Source syntax colors and semantic parsing can differ for unusual Markdown. Continuous fence backgrounds depend on code spans identified by the highlighting grammar and the fence-prefix check.
 - Plain-text output is a readable derived representation rather than a lossless equivalent of the source.
-- No automatic discovery of dynamically inserted editors and no built-in component disposal.
+- No automatic discovery of dynamically inserted editors or readers and no built-in component disposal. A reader renders its supplied model once; changing an existing reader has no dedicated update API.
 - No service worker, offline application packaging, or production deployment configuration.
 
 These are boundaries of the current implementation, not features promised by the architecture.
@@ -677,6 +739,8 @@ These are boundaries of the current implementation, not features promised by the
 | Add table operations | `table-operations.ts`, `table-tools.ts`, dialog/partial if needed | Rectangular model, alignments, correct replacement boundaries |
 | Save documents on server | `EditorController.Submit` and a new application persistence service | Server trust checks, authorization, validation, durable success semantics |
 | Embed several editors | Host view and partial ViewData | Unique storage keys, resources loaded once, root-scoped lookups |
+| Embed read-only documents | `_MarkdownViewer.cshtml`, `viewer.ts`, host resources | String model, container height, explicit initialization after dynamic insertion |
+| Change image insertion | `image-dialog.ts` and image form markup | HTTP/HTTPS validation, escaped Markdown, selection restoration, one undoable edit |
 | Export another format | `document-content.ts` or a separate exporter | Snapshot consistency and safe HTML boundaries |
 | Support frequent dynamic mounting | `editor.ts` and component classes | Explicit event/observer cleanup |
 
@@ -689,6 +753,9 @@ These are suggested extension locations based on current responsibility boundari
 | TypeScript edits do not appear | Rebuild frontend; confirm host loads the generated bundle; check for an old reused server |
 | Editor initialization throws a missing-element error | Compare partial data attributes and element types with `element()` lookups |
 | Two editors restore the same text | Set different `MarkdownEditorStorageKey` values |
+| Reader shows no formatted content | Load `viewer.js` and both reader stylesheets; initialize dynamically added roots; give the container a height |
+| Viewer unexpectedly shows the sample | Debug builds load the sample when the `markdown` parameter is absent; supply text or use `?markdown=` for an empty document |
+| Inserted image does not load | Check the URL points to an accessible image and the browser network result; both reader and preview fetch the resource directly |
 | Draft disappears after browser storage is blocked/cleared | Check the footer; use download; localStorage is the only automatic draft store |
 | Source caret and colored text disagree | Compare widths, padding, fonts, line heights, wrapping, and scroll positions of input/mirror |
 | Code background covers only inline text | Check fence recognition, `.editor__syntax--fenced`, backing rectangles, and loaded syntax CSS |
@@ -698,7 +765,7 @@ These are suggested extension locations based on current responsibility boundari
 | POST returns 413 | Check body-byte limits in the action and any deployment proxy |
 | Send succeeds but there is no saved server record | The example action acknowledges only; durable storage has not been implemented |
 
-For changes, follow [AGENTS.md](../AGENTS.md): keep functions focused, document TypeScript functions/callbacks, sanitize HTML before insertion, maintain the toolbar-only UI, and update [README.md](../README.md) when user-facing behavior or development instructions change.
+For changes, follow [AGENTS.md](../AGENTS.md): keep functions focused, document TypeScript functions/callbacks, sanitize HTML before insertion, maintain the toolbar-only UI, and update both [README.md](../README.md) and this architecture guide when features, configuration, dependencies, commands, or project structure change.
 
 ## 20. Suggested reading order and terminology
 
@@ -714,10 +781,13 @@ To follow the code without reading every file at once:
 8. Read `draft.ts`, `document-content.ts`, `editor-api.ts`, and the C# submission model to understand data leaving the editing session.
 9. Read the matching Playwright scenarios to see expected behavior as executable examples.
 
+For image insertion, trace the `image` command through `ImageDialog.open()`, URL validation, and the shared `applyEdit()` lifecycle. For standalone reading, follow `EditorController.Viewer`, `Viewer.cshtml`, `_MarkdownViewer.cshtml`, `viewer.ts`, and `renderPreview()` with its read-only option.
+
 | Term | Meaning in this project |
 |---|---|
 | Source | The native textarea's Markdown string |
 | Preview | Sanitized rendered HTML derived from source |
+| Reader | Read-only rendered document supplied by a Razor string model |
 | Mirror | Decorative colored copy behind the textarea |
 | Fence | Backtick or tilde delimiters surrounding a code block |
 | TextEdit | Complete document string plus desired selection after an operation |
