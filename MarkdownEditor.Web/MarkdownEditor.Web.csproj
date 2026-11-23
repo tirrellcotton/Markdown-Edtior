@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <DefaultItemExcludes>$(DefaultItemExcludes);node_modules/**;.reference/**;test-results/**;playwright-report/**</DefaultItemExcludes>
   </PropertyGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <Content Include="../Documentation/viewer-sample.md" Link="Documentation/viewer-sample.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
   <Target Name="BuildFrontend" BeforeTargets="BeforeBuild" Condition="'$(DesignTimeBuild)' != 'true'">
     <Exec Command="npm.cmd run build" WorkingDirectory="$(MSBuildProjectDirectory)" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
     <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)" Condition="!$([MSBuild]::IsOSPlatform('Windows'))" />

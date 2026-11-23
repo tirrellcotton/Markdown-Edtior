@@ -40,7 +40,7 @@ MarkdownEditor.Web/
     persistence/             Browser drafts and server submission
     tests/                   Playwright browser scenarios
   wwwroot/css/               BEM styles
-  wwwroot/js/                Generated editor bundle
+  wwwroot/js/                Generated editor and viewer bundles
   wwwroot/lib/               Generated local Bootstrap Icons assets
 ```
 
@@ -75,6 +75,30 @@ Set `ViewData["MarkdownEditorStorageKey"]` before rendering to choose a stable d
 ```
 
 Server-rendered partials initialize automatically. After dynamically adding partial markup, call the bundle's exported `initializeMarkdownEditors(container)` function. Repeated initialization preserves existing instances.
+
+## Read-only Markdown viewer
+
+Open `/Editor/Viewer?markdown=%23%20Hello` to display formatted Markdown through `EditorController.Viewer`. In **Debug builds**, opening `/Editor/Viewer` without a `markdown` query parameter reads and displays [Documentation/viewer-sample.md](Documentation/viewer-sample.md). The build copies this sample into the output's `Documentation` folder. This behavior uses the build configuration, independently of `ASPNETCORE_ENVIRONMENT`, and is excluded from Release builds. Release builds show an empty state when no Markdown is supplied. An explicit `?markdown=` shows an empty document in either configuration, and supplied text overrides the sample.
+
+This GET action is a host example for short text; applications can load larger or private documents in their own controller and pass the Markdown string directly to the view model.
+
+Embed the reader in any MVC view with a string model:
+
+```cshtml
+<partial name="_MarkdownViewer" model="Model.Markdown" />
+```
+
+Load these resources once in the host view or layout:
+
+```cshtml
+<link rel="stylesheet" href="~/css/editor.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/viewer.css" asp-append-version="true" />
+<script type="module" src="~/js/viewer.js" asp-append-version="true"></script>
+```
+
+The partial fills its container's width and height and scrolls internally; give the container a height (for example, `height: 400px`). It displays rendered headings, tables, lists, links, and highlighted fenced code without a Markdown source pane, toolbar, or draft persistence. Embedded HTML controls are disabled. Markdown is Razor-encoded during transport and rendered through the same Marked, DOMPurify, and Highlight.js pipeline as the editor preview.
+
+Multiple readers can coexist with editors. Server-rendered readers initialize automatically. For dynamically inserted partials, import `initializeMarkdownViewers` from `/js/viewer.js` and call it with the containing element. Repeated initialization preserves existing readers. Browser tests cover rendering, unsafe content, empty documents, multiple readers, and desktop/phone sizing.
 
 ## Editing
 
