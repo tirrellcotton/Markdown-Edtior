@@ -7,6 +7,9 @@ public sealed class EditorController : Controller
 {
     public IActionResult Index() => View();
 
+    [HttpGet]
+    public IActionResult Viewer(string? markdown) => View(model: markdown ?? string.Empty);
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(8_388_608)]
