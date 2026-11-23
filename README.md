@@ -96,7 +96,7 @@ Load these resources once in the host view or layout:
 <script type="module" src="~/js/viewer.js" asp-append-version="true"></script>
 ```
 
-The partial fills its container's width and height and scrolls internally; give the container a height (for example, `height: 400px`). It displays rendered headings, tables, lists, links, and highlighted fenced code without a Markdown source pane, toolbar, or draft persistence. Embedded HTML controls are disabled. Markdown is Razor-encoded during transport and rendered through the same Marked, DOMPurify, and Highlight.js pipeline as the editor preview.
+The partial fills its container's width and height and scrolls internally; give the container a height (for example, `height: 400px`). It displays rendered headings, tables, lists, links, images, and highlighted fenced code without a Markdown source pane, toolbar, or draft persistence. Images inserted by the editor's **Insert image** button render from the same `![description](url)` syntax and scale to fit the reader. The Debug sample includes a local landscape image for verification without an external image service. Embedded HTML controls are disabled. Markdown is Razor-encoded during transport and rendered through the same Marked, DOMPurify, and Highlight.js pipeline as the editor preview.
 
 Multiple readers can coexist with editors. Server-rendered readers initialize automatically. For dynamically inserted partials, import `initializeMarkdownViewers` from `/js/viewer.js` and call it with the containing element. Repeated initialization preserves existing readers. Browser tests cover rendering, unsafe content, empty documents, multiple readers, and desktop/phone sizing.
 

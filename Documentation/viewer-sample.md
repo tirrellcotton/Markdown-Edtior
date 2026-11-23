@@ -2,6 +2,12 @@
 
 This document exercises the **read-only viewer** with *formatted text*, ~~strikethrough~~, and `inline code`.
 
+## Image
+
+![Mountain landscape](/images/viewer-sample.svg)
+
+Images display directly in the reader and scale to fit its container. Their descriptions provide alternative text for readers who cannot see them.
+
 ## Lists
 
 - Headings and paragraphs
