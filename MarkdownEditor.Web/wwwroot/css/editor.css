@@ -90,6 +90,9 @@
 .editor__preview th, .editor__preview td { border: 1px solid var(--preview-border); padding: 8px 14px; }
 .editor__preview th { background: var(--preview-surface-raised); }
 .editor__preview img { max-width: 100%; height: auto; }
+.editor__preview .editor__diagram { margin: 1em 0; padding: 16px; overflow: auto; border: 1px solid var(--preview-border); border-radius: .25rem; background: #fff; text-align: center; }
+.editor__preview .editor__diagram-image { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.editor__preview .editor__diagram-error { margin: .5em 0; color: #a22626; font-size: .875rem; }
 .editor__preview hr { border: 0; border-top: 1px solid var(--preview-border); margin: 24px 0; }
 .editor__preview--empty::before { content: "Your preview will appear here."; display: block; color: #8a919e; padding-top: 6px; }
 .editor__status { display: flex; align-items: center; gap: 24px; padding: 9px 26px; min-height: 37px; font-size: 12px; color: var(--muted); background: #f8f9fb; border-top: 1px solid var(--border); }

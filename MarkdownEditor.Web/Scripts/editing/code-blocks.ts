@@ -3,6 +3,7 @@ import type { TextEdit } from './formatting';
 
 export const codeLanguages = [
   { label: 'Plain text', language: 'plaintext' },
+  { label: 'Mermaid chart / diagram', language: 'mermaid' },
   { label: 'C#', language: 'csharp' },
   { label: 'TypeScript', language: 'typescript' },
   { label: 'JavaScript', language: 'javascript' },
