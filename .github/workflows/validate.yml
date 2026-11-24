@@ -1,0 +1,41 @@
+name: Validate Markdown Editor
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: npm
+          cache-dependency-path: MarkdownEditor.Web/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix MarkdownEditor.Web
+
+      - name: Build frontend
+        run: npm run build --prefix MarkdownEditor.Web
+
+      - name: Restore .NET dependencies
+        run: dotnet restore MarkdownEditor.slnx
+
+      - name: Build application
+        run: dotnet build MarkdownEditor.slnx --configuration Release --no-restore

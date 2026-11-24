@@ -697,7 +697,7 @@ dotnet run --project MarkdownEditor.Web
 dotnet publish MarkdownEditor.Web -c Release
 ```
 
-On macOS/Linux, use `npm` and `npx` without `.cmd`. Publishing generates application artifacts; the repository does not define a hosting provider, infrastructure configuration, or deployment pipeline.
+On macOS/Linux, use `npm` and `npx` without `.cmd`. Publishing generates application artifacts. The repository deploys the compiled output to the `markdown-editor` Azure Web App through [`.github/workflows/deploy-azure.yml`](../.github/workflows/deploy-azure.yml). The workflow uses .NET 10, Node.js 22, and Azure OpenID Connect secrets; it runs for pushes to `main`, so an approved pull request must be merged before the production deployment starts. Pull requests targeting `main` use [`.github/workflows/validate.yml`](../.github/workflows/validate.yml).
 
 ## 17. Testing and verification
 
