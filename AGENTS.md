@@ -22,6 +22,12 @@ Use four spaces for C# and two spaces for TypeScript, CSS, and configuration. Us
 
 Keep functions focused and control flow straightforward. Prefer guard clauses and cohesive helpers; aim for cyclomatic complexity of 5–10 or less. Add a documentation comment immediately before every TypeScript function, method, constructor, and callback. Enable strict TypeScript checking and avoid untyped DOM access.
 
+## Documentation Guidelines
+
+Update both `README.md` and `Documentation/architecture.md` in the same change whenever features, configuration, dependencies, setup/build/test commands, or project structure change.
+
+Keep README usage instructions and examples current. Keep the architectural document's component responsibilities, data flows, security boundaries, source map, and diagrams aligned with the implementation. Before finishing, review both documents and verify that affected descriptions, commands, examples, and file links match the final code.
+
 ## Testing Guidelines
 
 Use Playwright integration tests named `*.spec.ts` for live rendering, formatting, keyboard interaction, persistence, and unsafe Markdown. No numeric coverage target is established. Verify changed behavior and responsive layout before submitting changes.

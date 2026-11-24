@@ -5,9 +5,9 @@ const webRoot = 'wwwroot';
 await mkdir(`${webRoot}/js`, { recursive: true });
 await mkdir(`${webRoot}/lib/bootstrap-icons`, { recursive: true });
 await build({
-  entryPoints: ['Scripts/editor.ts'],
+  entryPoints: ['Scripts/editor.ts', 'Scripts/viewer.ts'],
   bundle: true,
-  outfile: `${webRoot}/js/editor.js`,
+  outdir: `${webRoot}/js`,
   format: 'esm',
   target: 'es2022',
   minify: true,

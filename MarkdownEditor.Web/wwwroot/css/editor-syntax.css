@@ -1,0 +1,50 @@
+/* Customize these tokens globally or override them on an individual .editor. */
+.editor {
+  --syntax-text: #374151;
+  --syntax-surface: #fcfcfd;
+  --syntax-heading: #008b9a;
+  --syntax-bold: #244a91;
+  --syntax-italic: #8050b5;
+  --syntax-strikethrough: #6b7280;
+  --syntax-link: #2563eb;
+  --syntax-code: #3c7c28;
+  --syntax-code-background: #faf1eb;
+  --syntax-quote: #69717e;
+  --syntax-marker: #8050b5;
+}
+
+.editor__source-surface { position: relative; flex: 1; min-height: 0; overflow: hidden; background: var(--syntax-surface); }
+.editor__code-backgrounds { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.editor__code-background { position: absolute; left: 0; right: 0; background: var(--syntax-code-background); }
+.editor__syntax, .editor__source--highlighted {
+  font-family: Consolas, "Cascadia Code", monospace;
+  font-size: 15px;
+  line-height: 1.8;
+  tab-size: 2;
+  letter-spacing: normal;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+.editor__syntax { position: absolute; inset: 0; overflow: hidden; pointer-events: none; color: var(--syntax-text); }
+.editor__source--highlighted { position: absolute; inset: 0; height: 100%; background: transparent; color: transparent; caret-color: var(--syntax-text); }
+.editor__source--highlighted::selection { background: #b5d4f580; color: transparent; }
+.editor__syntax .hljs-section { color: var(--syntax-heading); font-weight: bold; }
+.editor__syntax .hljs-strong { color: var(--syntax-bold); font-weight: bold; }
+.editor__syntax .hljs-emphasis { color: var(--syntax-italic); font-style: italic; }
+.editor__syntax .editor__syntax--strike { color: var(--syntax-strikethrough); text-decoration: line-through; }
+.editor__syntax .hljs-link, .editor__syntax .hljs-string { color: var(--syntax-link); text-decoration: underline; }
+.editor__syntax .hljs-code { color: var(--syntax-code); background: var(--syntax-code-background); }
+.editor__syntax .editor__syntax--fenced { background: transparent; }
+.editor__syntax .hljs-quote { color: var(--syntax-quote); }
+.editor__syntax .hljs-bullet, .editor__syntax .hljs-symbol { color: var(--syntax-marker); }
+
+@media (max-width: 560px) {
+  .editor__source--highlighted { font-size: 14px; }
+}
+
+@media (forced-colors: active) {
+  .editor__syntax { display: none; }
+  .editor__source--highlighted { color: CanvasText; caret-color: CanvasText; }
+  .editor__source--highlighted::selection { color: HighlightText; background: Highlight; }
+}

@@ -7,6 +7,27 @@ public sealed class EditorController : Controller
 {
     public IActionResult Index() => View();
 
+    [HttpGet]
+    public Task<IActionResult> Viewer(string? markdown)
+    {
+#if DEBUG
+        if (!Request.Query.ContainsKey(nameof(markdown)))
+        {
+            return ViewSampleAsync();
+        }
+#endif
+        return Task.FromResult<IActionResult>(View(model: markdown ?? string.Empty));
+    }
+
+#if DEBUG
+    private async Task<IActionResult> ViewSampleAsync()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Documentation", "viewer-sample.md");
+        var markdown = await System.IO.File.ReadAllTextAsync(path, HttpContext.RequestAborted);
+        return View("Viewer", markdown);
+    }
+#endif
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(8_388_608)]

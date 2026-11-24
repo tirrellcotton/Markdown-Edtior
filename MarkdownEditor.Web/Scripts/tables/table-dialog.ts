@@ -41,7 +41,7 @@ export class TableDialog {
     this.focusActiveCell();
   }
 
-  /** Builds a labelled input for one header or body cell using safe DOM properties. */
+  /** Builds a labeled input for one header or body cell using safe DOM properties. */
   private createCell(row: number, column: number): HTMLTableCellElement {
     const cell = document.createElement(row === 0 ? 'th' : 'td');
     const input = document.createElement('input');

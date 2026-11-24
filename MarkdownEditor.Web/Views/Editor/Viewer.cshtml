@@ -1,0 +1,20 @@
+@model string
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Markdown Viewer</title>
+  <link rel="stylesheet" href="~/css/editor.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/viewer.css" asp-append-version="true" />
+  <script type="module" src="~/js/viewer.js" asp-append-version="true"></script>
+</head>
+<body class="viewer-page">
+  <main class="viewer-page__content">
+    <partial name="_MarkdownViewer" model="Model" />
+  </main>
+</body>
+</html>
