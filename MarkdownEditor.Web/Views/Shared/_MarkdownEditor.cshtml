@@ -84,11 +84,12 @@
     </div>
 
     <div class="editor__panes">
-      <section class="editor__pane" aria-labelledby="@(editorId)-source-title">
+      <section class="editor__pane" id="@(editorId)-source-pane" aria-labelledby="@(editorId)-source-title">
         <div class="editor__pane-header"><h2 class="editor__pane-title" id="@(editorId)-source-title" data-editor-element="source-title"><i class="bi bi-markdown" aria-hidden="true"></i> Markdown</h2><span class="editor__pane-hint">Write something great</span></div>
         <textarea class="editor__source" id="@(editorId)-markdown-source" data-editor-element="markdown-source" aria-label="Markdown content" spellcheck="false" placeholder="Start writing Markdown…"></textarea>
       </section>
-      <section class="editor__pane editor__pane--preview" aria-labelledby="@(editorId)-preview-title">
+      <div class="editor__resizer" data-editor-element="pane-resizer" role="separator" tabindex="0" aria-orientation="vertical" aria-labelledby="@(editorId)-source-title" aria-controls="@(editorId)-source-pane" aria-valuemin="25" aria-valuemax="75" aria-valuenow="50" aria-valuetext="Markdown 50%, preview 50%" title="Drag to resize panes. Use Left/Right arrows or Home/End. Double-click to reset."><span class="editor__resizer-grip" aria-hidden="true"></span></div>
+      <section class="editor__pane editor__pane--preview" id="@(editorId)-preview-pane" aria-labelledby="@(editorId)-preview-title">
         <div class="editor__pane-header"><h2 class="editor__pane-title" id="@(editorId)-preview-title" data-editor-element="preview-title"><i class="bi bi-eye" aria-hidden="true"></i> Preview</h2><span class="editor__live-label">Live preview</span></div>
         <div class="editor__preview" id="@(editorId)-markdown-preview" data-editor-element="markdown-preview" role="region" aria-label="Rendered Markdown preview" tabindex="0"></div>
       </section>
