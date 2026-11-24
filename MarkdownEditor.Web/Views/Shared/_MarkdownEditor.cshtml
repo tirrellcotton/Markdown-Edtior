@@ -1,4 +1,6 @@
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+
+@* Instance-specific IDs, draft storage, and the protected submission endpoint. *@
 @{
     var editorId = $"markdown-editor-{Guid.NewGuid():N}";
     var storageKey = ViewData["MarkdownEditorStorageKey"] as string ?? "markdown-editor.draft.v1";
@@ -6,9 +8,15 @@
     var requestToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
 }
   <section class="editor" id="@editorId" data-markdown-editor data-storage-key="@storageKey" data-post-url="@postUrl" aria-label="Markdown workspace">
+
+    @* The submission client reads this token for its anti-forgery request header. *@
     <input type="hidden" data-editor-element="request-token" value="@requestToken" />
+
+    @* Formatting and document commands; handlers are scoped to this editor instance. *@
     <div class="toolbar" role="toolbar" aria-label="Formatting toolbar">
       <div class="toolbar__group">
+
+        @* Paragraph and heading styles. *@
         <label class="toolbar__select-label" for="@(editorId)-heading"><i class="bi bi-type" aria-hidden="true"></i></label>
         <select class="toolbar__select" id="@(editorId)-heading" data-editor-element="heading" aria-label="Text style">
           <option value="0">Body</option><option value="1">Title · H1</option><option value="2">Subtitle · H2</option>
@@ -17,19 +25,27 @@
         </select>
       </div>
       <div class="toolbar__group">
+
+        @* Inline emphasis; pressed states reflect the current source selection. *@
         <button class="toolbar__button" type="button" data-command="bold" title="Bold (Ctrl+B)" aria-label="Bold" aria-pressed="false"><i class="bi bi-type-bold" aria-hidden="true"></i></button>
         <button class="toolbar__button" type="button" data-command="italic" title="Italic (Ctrl+I)" aria-label="Italic" aria-pressed="false"><i class="bi bi-type-italic" aria-hidden="true"></i></button>
         <button class="toolbar__button" type="button" data-command="strike" title="Strikethrough" aria-label="Strikethrough" aria-pressed="false"><i class="bi bi-type-strikethrough" aria-hidden="true"></i></button>
       </div>
       <div class="toolbar__group">
+
+        @* Line-based lists, tasks, and blockquotes. *@
         <button class="toolbar__button" type="button" data-command="bullet" title="Bulleted list" aria-label="Bulleted list"><i class="bi bi-list-ul" aria-hidden="true"></i></button>
         <button class="toolbar__button" type="button" data-command="numbered" title="Numbered list" aria-label="Numbered list"><i class="bi bi-list-ol" aria-hidden="true"></i></button>
         <button class="toolbar__button" type="button" data-command="task" title="Task list" aria-label="Task list"><i class="bi bi-list-check" aria-hidden="true"></i></button>
         <button class="toolbar__button" type="button" data-command="quote" title="Blockquote" aria-label="Blockquote"><i class="bi bi-quote" aria-hidden="true"></i></button>
       </div>
       <div class="toolbar__group">
+
+        @* Insert links, images, tables, code, and dividers. *@
         <button class="toolbar__button" type="button" data-command="link" title="Insert link (Ctrl+K)" aria-label="Insert link"><i class="bi bi-link-45deg" aria-hidden="true"></i></button>
         <button class="toolbar__button" type="button" data-command="image" title="Insert image" aria-label="Insert image" aria-haspopup="dialog" aria-controls="@(editorId)-image-dialog"><i class="bi bi-image" aria-hidden="true"></i></button>
+
+        @* Table size picker and contextual row, column, and cell commands. *@
         <div class="table-tools">
           <button class="toolbar__button" type="button" data-command="table" title="Insert or edit table" aria-label="Insert or edit table" aria-expanded="false" aria-controls="@(editorId)-table-picker" aria-haspopup="dialog"><i class="bi bi-table" aria-hidden="true"></i></button>
           <div class="table-tools__picker" id="@(editorId)-table-picker" data-editor-element="table-picker" role="dialog" aria-labelledby="@(editorId)-table-picker-title" hidden>
@@ -64,6 +80,8 @@
           </div>
         </div>
         <button class="toolbar__button" type="button" data-command="code" title="Inline code" aria-label="Inline code"><i class="bi bi-code" aria-hidden="true"></i></button>
+
+        @* TypeScript populates the supported fenced-code languages and Mermaid option. *@
         <div class="toolbar__code-language">
           <label class="toolbar__select-label" for="@(editorId)-code-language"><i class="bi bi-code-square" aria-hidden="true"></i></label>
           <select class="toolbar__select toolbar__select--code" id="@(editorId)-code-language" data-editor-element="code-language" aria-label="Insert code block" title="Choose a language to insert a code block">
@@ -73,31 +91,47 @@
         <button class="toolbar__button" type="button" data-command="rule" title="Horizontal rule" aria-label="Horizontal rule"><i class="bi bi-hr" aria-hidden="true"></i></button>
       </div>
       <div class="toolbar__group">
+
+        @* Document history navigation. *@
         <button class="toolbar__button" type="button" data-command="undo" title="Undo (Ctrl+Z)" aria-label="Undo"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
         <button class="toolbar__button" type="button" data-command="redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i></button>
       </div>
       <div class="toolbar__group toolbar__group--end">
+
+        @* Explicit server submission and local Markdown import/download. *@
         <button class="toolbar__button" type="button" data-command="send" title="Send to server" aria-label="Send to server"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i></button>
         <button class="toolbar__button" type="button" data-command="open" title="Open Markdown file" aria-label="Open Markdown file"><i class="bi bi-folder2-open" aria-hidden="true"></i></button>
         <button class="toolbar__button toolbar__button--download" type="button" data-command="download" title="Download Markdown (Ctrl+S)" aria-label="Download Markdown"><i class="bi bi-download" aria-hidden="true"></i><span class="toolbar__button-text">Download</span></button>
       </div>
     </div>
 
+    @* Source and rendered preview share a resizable grid and scroll independently. *@
     <div class="editor__panes">
       <section class="editor__pane" id="@(editorId)-source-pane" aria-labelledby="@(editorId)-source-title">
+
+        @* The native textarea is authoritative; initialization adds the syntax mirror. *@
         <div class="editor__pane-header"><h2 class="editor__pane-title" id="@(editorId)-source-title" data-editor-element="source-title"><i class="bi bi-markdown" aria-hidden="true"></i> Markdown</h2><span class="editor__pane-hint">Write something great</span></div>
         <textarea class="editor__source" id="@(editorId)-markdown-source" data-editor-element="markdown-source" aria-label="Markdown content" spellcheck="false" placeholder="Start writing Markdown…"></textarea>
       </section>
+
+      @* Pointer and keyboard splitter; its accessibility values track the source pane's share. *@
       <div class="editor__resizer" data-editor-element="pane-resizer" role="separator" tabindex="0" aria-orientation="vertical" aria-labelledby="@(editorId)-source-title" aria-controls="@(editorId)-source-pane" aria-valuemin="25" aria-valuemax="75" aria-valuenow="50" aria-valuetext="Markdown 50%, preview 50%" title="Drag to resize panes. Use Left/Right arrows or Home/End. Double-click to reset."><span class="editor__resizer-grip" aria-hidden="true"></span></div>
       <section class="editor__pane editor__pane--preview" id="@(editorId)-preview-pane" aria-labelledby="@(editorId)-preview-title">
+
+        @* The shared renderer inserts sanitized Markdown and asynchronous diagrams here. *@
         <div class="editor__pane-header"><h2 class="editor__pane-title" id="@(editorId)-preview-title" data-editor-element="preview-title"><i class="bi bi-eye" aria-hidden="true"></i> Preview</h2><span class="editor__live-label">Live preview</span></div>
         <div class="editor__preview" id="@(editorId)-markdown-preview" data-editor-element="markdown-preview" role="region" aria-label="Rendered Markdown preview" tabindex="0"></div>
       </section>
     </div>
+
+    @* Cursor position, document counts, and save/submission feedback. *@
     <footer class="editor__status"><span id="@(editorId)-cursor-position" data-editor-element="cursor-position">Ln 1, Col 1</span><span id="@(editorId)-word-count" data-editor-element="word-count">0 words</span><span id="@(editorId)-character-count" data-editor-element="character-count">0 characters</span><span class="editor__message" data-editor-element="editor-message" role="status" hidden></span><span class="editor__status-end">Markdown <span class="editor__status-divider">|</span> UTF-8</span></footer>
+
+    @* Hidden file input activated by the Open toolbar command. *@
     <input id="@(editorId)-open-file" data-editor-element="open-file" type="file" accept=".md,.markdown,.txt,text/plain,text/markdown" hidden />
 
 
+  @* Link insertion dialog; the client restores the source selection when it closes. *@
   <dialog class="link-dialog" id="@(editorId)-link-dialog" data-editor-element="link-dialog" aria-labelledby="@(editorId)-link-title">
     <form class="link-dialog__form" id="@(editorId)-link-form" data-editor-element="link-form">
       <h2 class="link-dialog__title" id="@(editorId)-link-title" data-editor-element="link-title">Insert link</h2>
@@ -110,6 +144,7 @@
     </form>
   </dialog>
 
+  @* Image insertion dialog with URL validation and an optional accessible description. *@
   <dialog class="link-dialog" id="@(editorId)-image-dialog" data-editor-element="image-dialog" aria-labelledby="@(editorId)-image-title" aria-describedby="@(editorId)-image-hint">
     <form class="link-dialog__form" data-editor-element="image-form">
       <h2 class="link-dialog__title" id="@(editorId)-image-title">Insert image</h2>
@@ -122,6 +157,7 @@
     </form>
   </dialog>
 
+  @* Temporary table-editing grid; Save commits the edits and Cancel discards them. *@
   <dialog class="table-dialog" id="@(editorId)-table-dialog" data-editor-element="table-dialog" aria-labelledby="@(editorId)-table-dialog-title">
     <form class="table-dialog__form" id="@(editorId)-table-form" data-editor-element="table-form">
       <h2 class="table-dialog__title" id="@(editorId)-table-dialog-title" data-editor-element="table-dialog-title">Edit table</h2>
