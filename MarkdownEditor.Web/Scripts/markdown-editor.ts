@@ -11,6 +11,7 @@ import { activeFormatting, formattingRanges } from './editing/formatting-state';
 import type { FormattingRange } from './editing/formatting-state';
 import { SourceHighlighting } from './rendering/source-highlighting';
 import { ImageDialog } from './editing/image-dialog';
+import { PaneResizer } from './pane-resizer';
 
 export class MarkdownEditor {
   private readonly source: HTMLTextAreaElement;
@@ -48,6 +49,7 @@ export class MarkdownEditor {
     this.history = new EditorHistory(this.snapshot());
     this.tableTools = new TableTools(root, this.source, this.applyEdit.bind(this));
     this.imageDialog = new ImageDialog(root, this.source, this.applyEdit.bind(this));
+    new PaneResizer(root);
     populateCodeLanguages(this.find('[data-editor-element="code-language"]', HTMLSelectElement));
     this.bindEvents();
     this.refresh();

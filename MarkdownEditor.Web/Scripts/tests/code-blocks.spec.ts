@@ -5,13 +5,13 @@ test('inserts a tagged code block for every language option', /** Verifies every
   await page.goto('/');
   const source = page.getByRole('textbox', { name: 'Markdown content' });
   const select = page.getByRole('combobox', { name: 'Insert code block' });
-  await expect(select.locator('option')).toHaveCount(30);
+  await expect(select.locator('option')).toHaveCount(codeLanguages.length + 1);
   for (const entry of codeLanguages) {
     await source.fill('');
     await select.selectOption({ label: entry.label });
     await expect(source).toHaveValue('```' + entry.language + '\ncode here\n```\n\n');
     const code = page.locator('[data-editor-element="markdown-preview"] pre code');
-    await expect(code).toHaveClass(new RegExp(`language-${entry.language} hljs`));
+    await expect(code).toHaveClass(new RegExp(`language-${entry.language}${entry.language === 'mermaid' ? '' : ' hljs'}`));
     await expect(code).toHaveText('code here\n');
     await expect(source).toBeFocused();
     await expect(select).toHaveValue('');

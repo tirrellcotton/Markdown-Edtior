@@ -2,7 +2,7 @@
 
 This document explains the implemented application, its data flow, and the responsibilities of its source files. It is intended as a guided tour for someone learning the project as well as a reference for future changes.
 
-**Scope:** the current implementation, including source syntax highlighting, image URL insertion, and the reusable read-only viewer with its Debug sample. Keep this guide and the README aligned with implementation changes as required by [AGENTS.md](../AGENTS.md).
+**Scope:** the current implementation, including source syntax highlighting, Mermaid charts and diagrams, image URL insertion, and the reusable read-only viewer with its Debug sample. Keep this guide and the README aligned with implementation changes as required by [AGENTS.md](../AGENTS.md).
 
 Diagrams use Mermaid syntax. Open this file in a Markdown viewer with Mermaid support to see them rendered. The prose also explains each diagram so the document remains useful in a plain text editor.
 
@@ -79,9 +79,10 @@ MarkdownEditor.Web/
     editor.ts                       Bundle entry and public API
     viewer.ts                       Reader entry and idempotent initialization
     markdown-editor.ts              One editor instance's coordinator
+    pane-resizer.ts                 Pointer/keyboard resizing of editor panes
     dom.ts                          Typed required-element lookup
     editing/                        Source transforms, image dialog, history
-    rendering/                      Preview, source colors, extraction
+    rendering/                      Preview, Mermaid diagrams, source colors, extraction
     persistence/                    localStorage and Axios submission
     tables/                         Table model, operations, and controls
     tests/                          Browser integration tests
@@ -90,7 +91,7 @@ MarkdownEditor.Web/
   wwwroot/css/editor-syntax.css     Source syntax colors and mirror layers
   wwwroot/css/viewer.css            Container sizing and viewer empty state
   wwwroot/images/viewer-sample.svg  Local sample landscape
-  wwwroot/js/                       Generated editor/viewer bundles and maps
+  wwwroot/js/                       Generated editor/viewer bundles, lazy chunks, maps
   wwwroot/lib/                      Copied Bootstrap Icons files
   package.json / package-lock.json  Frontend scripts and dependencies
   tsconfig.json                     TypeScript compiler policy
@@ -108,12 +109,14 @@ MarkdownEditor.Web/
 | [`viewer.ts`](../MarkdownEditor.Web/Scripts/viewer.ts) | Renders each server-supplied reader root once | Read-only document DOM; exported `initializeMarkdownViewers` |
 | [`markdown-editor.ts`](../MarkdownEditor.Web/Scripts/markdown-editor.ts) | Coordinates controls, events, refreshes, dialogs, file operations, and sending | Changes to source and derived UI |
 | [`dom.ts`](../MarkdownEditor.Web/Scripts/dom.ts) | Checks that required elements exist and have the expected DOM type | Typed element or an explicit error |
+| [`pane-resizer.ts`](../MarkdownEditor.Web/Scripts/pane-resizer.ts) | Owns one divider's pointer capture, keyboard controls, and split ratio | Grid sizing variables and separator accessibility values |
 | [`formatting.ts`](../MarkdownEditor.Web/Scripts/editing/formatting.ts) | Computes source-text transformations | `TextEdit` values |
 | [`formatting-state.ts`](../MarkdownEditor.Web/Scripts/editing/formatting-state.ts) | Maps parsed emphasis back to source offsets | `FormattingRange[]` and active styles |
 | [`history.ts`](../MarkdownEditor.Web/Scripts/editing/history.ts) | Stores document and selection snapshots | Undo/redo snapshots |
 | [`code-blocks.ts`](../MarkdownEditor.Web/Scripts/editing/code-blocks.ts) | Defines language choices and inserts safe backtick fences | Language options and `TextEdit` |
 | [`image-dialog.ts`](../MarkdownEditor.Web/Scripts/editing/image-dialog.ts) | Owns image form, URL validation, and saved selection | Escaped image Markdown through an undoable `TextEdit` |
 | [`preview.ts`](../MarkdownEditor.Web/Scripts/rendering/preview.ts) | Parses and sanitizes Markdown, decorates links, and optionally disables controls | Editor preview or read-only document DOM |
+| [`diagrams.ts`](../MarkdownEditor.Web/Scripts/rendering/diagrams.ts) | Lazily renders mounted Mermaid fences after a typing pause | Isolated SVG images or readable source with errors |
 | [`code-highlighting.ts`](../MarkdownEditor.Web/Scripts/rendering/code-highlighting.ts) | Highlights programming languages within preview code blocks | Sanitized highlighting spans |
 | [`source-highlighting.ts`](../MarkdownEditor.Web/Scripts/rendering/source-highlighting.ts) | Mirrors source with syntax colors and full-width code backgrounds | Decorative layers beside the native input |
 | [`document-content.ts`](../MarkdownEditor.Web/Scripts/rendering/document-content.ts) | Produces Markdown, readable text, and HTML from one snapshot | `MarkdownContent` |
@@ -185,7 +188,7 @@ At render time, the partial creates a GUID-based editor ID. Labels, dialog refer
 
 JavaScript generally finds controls by `data-editor-element`, scoped to the editor root. This is separate from CSS presentation classes and generated IDs. Renaming one of those data values requires updating its TypeScript lookup and tests. [`element()`](../MarkdownEditor.Web/Scripts/dom.ts) throws when a required element is missing or has the wrong DOM type, making a broken markup contract visible during initialization.
 
-The component contains a toolbar, source and preview sections, status footer, hidden file input, link and image dialogs, table picker, and table dialog. The `image` toolbar command opens the image dialog using the same visual classes as the link dialog. Table-size buttons, language options, and table-cell inputs are populated by JavaScript.
+The component contains a toolbar, source and preview sections separated by a focusable resize handle, status footer, hidden file input, link and image dialogs, table picker, and table dialog. The `pane-resizer` element has a separator role, vertical orientation, minimum/maximum/current percentage values, and references the source pane through `aria-controls` and its heading through `aria-labelledby`. Pane IDs use the instance prefix. The `image` toolbar command opens the image dialog using the same visual classes as the link dialog. Table-size buttons, language options, and table-cell inputs are populated by JavaScript.
 
 ### Read-only partial contract
 
@@ -218,6 +221,8 @@ sequenceDiagram
 ```
 
 Each `MarkdownEditor` owns its element references, history object, table controls, image dialog, source highlighting object, filename, link selection, and cached formatting ranges. It does not share those fields with another instance.
+
+The constructor also creates a root-scoped `PaneResizer`. Its split ratio starts at 50%, remains separate from Markdown/history/drafts, and lasts until the instance is reloaded. Pointer capture tracks a primary mouse/touch/pen drag even outside the handle; release, cancellation, capture loss, or switching to the phone layout ends dragging. Layout changes only update grid variables and separator values, so the renderer and draft persistence are not rerun. The existing source-highlighting ResizeObserver synchronizes the mirror with the resized textarea.
 
 For multiple editors, choose distinct storage keys. Their UI state is independent, but two instances using the default `markdown-editor.draft.v1` key write the same browser draft slot. Dynamically inserting a new partial also requires an explicit `initializeMarkdownEditors(newRoot)` call; there is no mutation observer that automatically discovers new roots.
 
@@ -316,7 +321,7 @@ The parser can remove list or quote prefixes when exposing child text. `mapFragm
 
 ### Fenced-code insertion
 
-[`code-blocks.ts`](../MarkdownEditor.Web/Scripts/editing/code-blocks.ts) defines 29 language choices, including plain text, C#, TypeScript, SQL, Python, Rust, and Markdown. Inserting a code block wraps selected text or the `code here` placeholder, supplies paragraph spacing, and selects the block body for typing.
+[`code-blocks.ts`](../MarkdownEditor.Web/Scripts/editing/code-blocks.ts) defines 30 language/format choices, including Mermaid charts and diagrams, plain text, C#, TypeScript, SQL, Python, Rust, and Markdown. Inserting a code block wraps selected text or the `code here` placeholder, supplies paragraph spacing, and selects the block body for typing.
 
 The opening fence uses at least three backticks and is longer than any backtick run in the body. This prevents selected content containing triple backticks from prematurely closing the newly inserted fence. Choosing a language resets the dropdown so the same choice can be selected again.
 
@@ -354,6 +359,11 @@ flowchart LR
   DOM --> Links[Set safe new-tab link attributes]
   Links --> Code[Highlight pre/code text]
   Code --> Final[Rendered preview]
+  Final --> Fences{Mounted Mermaid fences?}
+  Fences -->|Yes, after typing pause| Mermaid[Lazy local Mermaid renderer]
+  Mermaid --> SVG[Sanitize SVG and isolate in image]
+  SVG --> Current{Source block still current?}
+  Current -->|Yes| Diagram[Replace fence with diagram]
 ```
 
 [`code-highlighting.ts`](../MarkdownEditor.Web/Scripts/rendering/code-highlighting.ts) loads Highlight.js's common language set plus explicit registrations for PowerShell, Dart, and Dockerfile. It reads each `pre code` element's text content and its `language-*` class.
@@ -363,6 +373,16 @@ If a known language is declared, it highlights with that language and `ignoreIll
 The source-code theme and preview-code theme are independent. The preview currently uses a dark code-block background with language-token colors in `editor.css`. This does not imply that source code inside Markdown fences receives the same programming-language token colors.
 
 The empty-preview class is toggled using whether the Markdown trims to an empty string. The visible empty message is supplied by CSS rather than inserting document content.
+
+### Mermaid charts and diagrams
+
+After synchronous Markdown sanitization and highlighting, `renderPreview` schedules Mermaid rendering only for mounted DOM containers. [`diagrams.ts`](../MarkdownEditor.Web/Scripts/rendering/diagrams.ts) finds `pre > code.language-mermaid`, debounces each preview for 150 milliseconds, and lazily imports the locally bundled Mermaid library. Initialization disables automatic scanning, uses strict security and SVG text labels, and caps definitions at 50,000 characters and 500 edges. Mermaid supports the flowcharts and sequence diagrams used throughout this document as well as chart types such as pie charts. The code-block dropdown also offers Mermaid fences.
+
+Each block renders asynchronously in a temporary layout container that is removed in `finally`. Before and after rendering, the module checks that the original code block still belongs to the preview; stale work cannot replace newer content. Multiple instances share the lazy renderer while owning separate debounce timers and blocks. A malformed definition retains its source with a status message; valid neighbors still render. Library load failures also retain source and allow a later refresh to retry.
+
+Mermaid output passes through a separate SVG DOMPurify policy that removes scripts, foreign HTML, links, and embedded images. The sanitized SVG is encoded into an image data URL, which isolates its markup from the host document. Application-owned security, HTML-label, and theme configuration cannot be relaxed through diagram directives. No diagram interaction callbacks are bound. Images have alternative text and scale within their pane; authors should include prose descriptions for complex diagrams. Rendering uses local assets and does not send diagram source to a remote service.
+
+`getEditorContent` intentionally renders into a detached element, so its synchronous Markdown/plain-text/HTML snapshot preserves diagram definitions as fenced code. Export and submission do not wait for the asynchronous image rendering or include generated SVG images. Drafts and Markdown downloads retain the original source.
 
 ### Reader rendering and images
 
@@ -575,6 +595,7 @@ The important boundary is untrusted Markdown or submitted JSON crossing into HTM
 |---|---|---|
 | Markdown to preview DOM | DOMPurify after Marked | Parser output is sanitized before DOM insertion |
 | Code text to preview spans | Text extraction, Highlight.js, span-only sanitization | Code is interpreted for colors, not executed |
+| Mermaid source to diagram image | Strict Mermaid settings, locked security configuration, SVG sanitization, image isolation | Diagrams cannot execute host scripts or bind click actions; oversized/invalid definitions retain source |
 | Source text to syntax mirror | Highlight.js escaping and DOMPurify; strike uses text nodes | Source markup remains text in the mirror |
 | Link dialog to Markdown | HTTP/HTTPS validation and escaping | Dialog rejects executable protocols; direct source still goes through preview sanitization |
 | Image dialog to Markdown | Absolute HTTP/HTTPS validation, URL parsing, label escaping | Dialog limits inserted addresses; the browser fetches the image directly |
@@ -595,9 +616,11 @@ Draft content is not automatically transmitted to the application's server while
 
 [`editor.css`](../MarkdownEditor.Web/wwwroot/css/editor.css) scopes most component presentation under `.editor`. It uses BEM-style names for blocks, elements, and modifiers, including `toolbar__button--active` and `editor__pane--preview`.
 
-The editor is a vertical flex container: toolbar at the top, flexible panes in the middle, and a status footer at the bottom. The pane region uses two equal-width grid columns with `minmax(0, 1fr)`, permitting content to shrink without forcing the whole page wider. Preview images are constrained to container width; preview tables and code blocks can scroll horizontally.
+The editor is a vertical flex container: toolbar at the top, flexible panes in the middle, and a status footer at the bottom. The pane region uses two flexible `minmax(0, ...)` grid tracks separated by a 10px resize handle. The tracks start at equal widths; `--editor-source-size` and `--editor-preview-size` set their fractional weights after resizing. Each pane is constrained to 25–75% of the space remaining after the divider. Preview images are constrained to container width; preview tables and code blocks can scroll horizontally.
 
-At widths up to 900px, toolbar gaps/padding tighten, text labels and hints reduce, and pane padding shrinks. At widths up to 560px, the panes stack vertically with minimum row heights, the preview border moves to the top, and status content is simplified. The table picker uses a fixed position on narrow layouts; dialogs and their internal grids have constrained sizes and scrolling.
+The divider has a visible grip, resize cursor, hover/focus states, and `touch-action: none` for direct pointer manipulation. Left/Right arrows adjust the source share by five percentage points, Home/End select the limits, and double-click restores 50/50. ARIA values track the current share and report both pane percentages. Resizing preserves document text, selection, and undo history; separate editors have independent splits.
+
+At widths up to 900px, toolbar gaps/padding tighten, text labels and hints reduce, and pane padding shrinks. At widths up to 560px, the panes stack vertically with minimum row heights, the divider is hidden, the preview border moves to the top, and status content is simplified. A focused divider returns focus to the source when it becomes hidden. Returning to desktop restores the previous split. The table picker uses a fixed position on narrow layouts; dialogs and their internal grids have constrained sizes and scrolling.
 
 The preview defines its own `--preview-*` tokens, while source syntax defines `--syntax-*` tokens in `editor-syntax.css`. Keep those responsibilities separate when changing a theme. The component declares a light color scheme; there is no theme-toggle state machine.
 
@@ -617,6 +640,7 @@ In forced-color mode, CSS hides the source mirror and restores system text and c
 | Marked | Markdown HTML parsing, semantic emphasis ranges, and table discovery |
 | DOMPurify | Browser HTML sanitization at preview/highlighting boundaries |
 | Highlight.js | Programming-language highlighting in preview and Markdown source decoration |
+| Mermaid | Local, lazy rendering of charts and diagrams from Mermaid fences |
 | Axios | JSON submission, timeout, and error identification |
 | Bootstrap Icons | Local icon font and CSS; the Bootstrap UI framework is not used |
 | TypeScript | Static checking for application and test source |
@@ -637,14 +661,16 @@ flowchart LR
   Npm --> TSC[tsc --noEmit]
   TSC --> Build[build.mjs and esbuild]
   Build --> Bundle[editor.js and viewer.js with source maps]
+  Build --> Chunks[Shared and lazy Mermaid chunks]
   Build --> Icons[wwwroot/lib/bootstrap-icons]
   Bundle --> Publish[.NET build and publish assets]
+  Chunks --> Publish
   Icons --> Publish
 ```
 
 [`tsconfig.json`](../MarkdownEditor.Web/tsconfig.json) targets ES2022, uses ESNext modules with bundler resolution, includes DOM libraries, and enables strict checking plus unused-local and unused-parameter checks. It includes all TypeScript beneath `Scripts`, including tests. TypeScript checking itself emits nothing.
 
-[`build.mjs`](../MarkdownEditor.Web/build.mjs) bundles `Scripts/editor.ts` and `Scripts/viewer.ts` into separate minified ES modules in `wwwroot/js`, with a source map for each, and copies the Bootstrap Icons CSS, font files, and license into `wwwroot/lib`. Each bundle includes its required rendering code; esbuild code splitting is not enabled. It does not compile or bundle CSS. Host views reference the CSS files directly.
+[`build.mjs`](../MarkdownEditor.Web/build.mjs) bundles `Scripts/editor.ts` and `Scripts/viewer.ts` into separate minified ES modules in `wwwroot/js`, with source maps, and copies the Bootstrap Icons CSS, font files, and license into `wwwroot/lib`. esbuild code splitting shares rendering dependencies across entry points and emits dynamically imported Mermaid and diagram-type chunks into `wwwroot/js/chunks`. Deploy that directory with the entry bundles; importing only `editor.js` or `viewer.js` without their chunks is insufficient. It does not compile or bundle CSS. Host views reference the CSS files directly.
 
 [`MarkdownEditor.Web.csproj`](../MarkdownEditor.Web/MarkdownEditor.Web.csproj) runs the frontend build before ordinary .NET builds, except design-time builds. It selects `npm.cmd` on Windows and `npm` elsewhere. It then refreshes generated static content items for publishing. This matters because generated assets may not exist when MSBuild first evaluates the project.
 
@@ -685,11 +711,13 @@ The default test server builds Debug. Viewer sample-loading tests require that c
 |---|---|
 | `editor.spec.ts` | Live rendering, draft restoration, formatting, history, headings/lists, links, HTML safety, files, layout |
 | `code-blocks.spec.ts` | Language choices, safe code fences, placeholder selection, undo, phone controls |
+| `diagrams.spec.ts` | Mermaid flowcharts, sequences, charts, live edits, drafts, synchronous exports, invalid/oversized definitions, stale rendering, security settings, multiple instances, desktop/phone sizing |
 | `formatting-state.spec.ts` | Nested emphasis, source selection, ignored literal syntax, toolbar state |
 | `highlighting.spec.ts` | Programming-language code preview, unknown languages, literal HTML code, long lines |
 | `images.spec.ts` | Image URL insertion, loaded image/alt text, URL escaping and validation, caret/selection, undo/redo, drafts, cancellation, independent instances, desktop/phone sizing |
 | `source-highlighting.spec.ts` | Source colors, strike decoration, exact mirrored text, full-width fences, desktop/phone geometry |
 | `partial.spec.ts` | Host resources, labels, multiple independent editors, repeated initialization |
+| `pane-resizer.spec.ts` | Mouse/touch dragging, cancellation, width limits, keyboard/ARIA controls, independent instances, source-mirror alignment, desktop/phone layout |
 | `submission.spec.ts` | JSON payload, antiforgery, validation, empty documents, failures, duplicates, edits during send, content extraction |
 | `tables.spec.ts` | Table insertion, editing/canceling, contextual operations, escaped pipes, alignments, adjacent content, phones |
 | `viewer.spec.ts` | Read-only formatting, sanitization, Debug sample, empty-query override, independent embedded readers, loaded images, desktop/phone sizing and scrolling |
@@ -704,19 +732,22 @@ Use the current test run as validation evidence rather than treating a fixed tes
 
 Every document refresh reparses the whole Markdown preview, sanitizes and replaces preview HTML, highlights preview code blocks, lexes formatting ranges, rebuilds source syntax spans, updates statistics, and synchronously saves the draft. The formatting mapper allocates a position mapping across the source's UTF-16 length. Undo snapshots also retain whole document strings.
 
+Mounted Mermaid fences render asynchronously after a 150-millisecond pause, loading the renderer only when needed. Obsolete blocks are ignored, but a Mermaid render already in progress is not cancellable. Large numbers of diagrams still require browser layout work; the per-definition character/edge limits do not constitute a document-wide CPU budget.
+
 This approach keeps behavior easy to reason about for ordinary documents. It does not use incremental parsing, virtualized rendering, a worker thread, debounced persistence, or an incremental undo patch model. No measured maximum responsive document size is established. A 1 MiB file-import guard is an input constraint, not a latency guarantee.
 
 Source highlighting also measures DOM geometry after styling changes and rebuilds fence rectangles during synchronization. Scroll events can therefore involve layout reads and DOM writes. If larger documents become a requirement, measure editing and scrolling latency before choosing optimizations such as scheduling decoration work or caching fence measurements.
 
 ### Lifecycle boundaries
 
-The code initializes instances once but does not expose a destroy/dispose API. `TableTools` adds a document-level outside-click listener, and `SourceHighlighting` creates a resize observer without an explicit disconnect path. A future host that frequently removes/replaces editor components should add lifecycle cleanup before assuming repeated mounting is resource-neutral. The WeakSet prevents duplicate initialization; it does not by itself unregister listeners or observers.
+The code initializes instances once but does not expose a destroy/dispose API. `TableTools` adds a document-level outside-click listener, `PaneResizer` registers a media-query change listener, and `SourceHighlighting` creates a resize observer without an explicit disconnect path. A future host that frequently removes/replaces editor components should add lifecycle cleanup before assuming repeated mounting is resource-neutral. The WeakSet prevents duplicate initialization; it does not by itself unregister listeners or observers.
 
 ### Current product limits
 
 - One draft string per configured key; no document list, versioned server history, or multi-user collaboration.
 - No durable server persistence, authentication, authorization, retry queue, or conflict resolution.
 - Images are URL references with no upload, proxy, cache, or custom load-error UI.
+- Mermaid diagrams are static images without click actions, pan/zoom controls, or HTML labels. Invalid definitions retain source; synchronous HTML export retains fences rather than rendered SVG.
 - No cross-tab draft reconciliation and no persistence of undo, filename, or selection across reloads.
 - Table editing locates top-level tables and serializes them to normalized source; it is not a lossless Markdown formatter.
 - Source syntax colors and semantic parsing can differ for unusual Markdown. Continuous fence backgrounds depend on code spans identified by the highlighting grammar and the fence-prefix check.

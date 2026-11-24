@@ -1,6 +1,7 @@
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import { highlightCodeBlocks } from './code-highlighting';
+import { renderDiagrams } from './diagrams';
 
 /** Renders GitHub-flavored Markdown and removes executable HTML and unsafe URLs. */
 export function renderPreview(preview: HTMLElement, markdown: string, readOnly = false): void {
@@ -18,6 +19,7 @@ export function renderPreview(preview: HTMLElement, markdown: string, readOnly =
   highlightCodeBlocks(preview);
   if (readOnly) disableControls(preview);
   preview.classList.toggle('editor__preview--empty', markdown.trim().length === 0);
+  if (preview.isConnected) renderDiagrams(preview);
 }
 
 /** Prevents embedded HTML controls from changing a read-only document. */
