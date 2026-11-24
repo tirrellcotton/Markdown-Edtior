@@ -34,6 +34,8 @@ Use Playwright integration tests named `*.spec.ts` for live rendering, formattin
 
 ## Commit & Pull Request Guidelines
 
+Create each feature branch from the latest `origin/development`: run `git fetch origin` followed by `git switch --no-track -c feature/<name> origin/development`. Target feature pull requests at `development` and include its current commits before merging. Promote changes to `main` through a pull request from this repository's `development` branch; use `main` to `development` pull requests when synchronizing release history.
+
 No Git history was available when this guide was created. Use short imperative commit subjects, such as `Add Markdown link dialog`. Pull requests should explain the behavior changed, reference relevant issues, list validation performed, and include screenshots for UI changes.
 
 ## Security & Configuration
