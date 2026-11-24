@@ -1,4 +1,6 @@
 @model string
+
+@* Standalone reader host for the Markdown supplied by the controller. *@
 @{
     Layout = null;
 }
@@ -8,11 +10,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Markdown Viewer</title>
+
+  @* Shared preview typography, reader sizing, and read-only component initialization. *@
   <link rel="stylesheet" href="~/css/editor.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/viewer.css" asp-append-version="true" />
   <script type="module" src="~/js/viewer.js" asp-append-version="true"></script>
 </head>
 <body class="viewer-page">
+
+  @* The reader fills this container and handles document scrolling internally. *@
   <main class="viewer-page__content">
     <partial name="_MarkdownViewer" model="Model" />
   </main>

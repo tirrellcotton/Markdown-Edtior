@@ -1,3 +1,4 @@
+@* Standalone editor host; shared partials receive their resources from this page. *@
 @{
     Layout = null;
 }
@@ -8,12 +9,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="A simple, private Markdown workspace with a live preview." />
   <title>Markdown Editor</title>
+
+  @* Editor layout, source syntax colors, icons, and automatic component initialization. *@
   <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/editor.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/editor-syntax.css" asp-append-version="true" />
   <script type="module" src="~/js/editor.js" asp-append-version="true"></script>
 </head>
 <body class="editor-page">
+
+  @* Full-height container for the reusable Markdown workspace. *@
   <main class="editor-page__content">
     <partial name="_MarkdownEditor" />
   </main>

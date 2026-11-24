@@ -13,9 +13,12 @@
   --syntax-marker: #8050b5;
 }
 
+/* Source-layer container and continuous full-width fenced-code backgrounds. */
 .editor__source-surface { position: relative; flex: 1; min-height: 0; overflow: hidden; background: var(--syntax-surface); }
 .editor__code-backgrounds { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .editor__code-background { position: absolute; left: 0; right: 0; background: var(--syntax-code-background); }
+
+/* Keep mirror and textarea metrics identical so wrapping and caret placement line up. */
 .editor__syntax, .editor__source--highlighted {
   font-family: Consolas, "Cascadia Code", monospace;
   font-size: 15px;
@@ -26,9 +29,13 @@
   overflow-wrap: break-word;
   word-break: normal;
 }
+
+/* Decorative text sits beneath the transparent native input, which retains selection and caret. */
 .editor__syntax { position: absolute; inset: 0; overflow: hidden; pointer-events: none; color: var(--syntax-text); }
 .editor__source--highlighted { position: absolute; inset: 0; height: 100%; background: transparent; color: transparent; caret-color: var(--syntax-text); }
 .editor__source--highlighted::selection { background: #b5d4f580; color: transparent; }
+
+/* Markdown token colors; fenced blocks use the separate full-width background layer. */
 .editor__syntax .hljs-section { color: var(--syntax-heading); font-weight: bold; }
 .editor__syntax .hljs-strong { color: var(--syntax-bold); font-weight: bold; }
 .editor__syntax .hljs-emphasis { color: var(--syntax-italic); font-style: italic; }
@@ -39,10 +46,12 @@
 .editor__syntax .hljs-quote { color: var(--syntax-quote); }
 .editor__syntax .hljs-bullet, .editor__syntax .hljs-symbol { color: var(--syntax-marker); }
 
+/* Match the phone textarea font size; SourceHighlighting synchronizes the mirror's size. */
 @media (max-width: 560px) {
   .editor__source--highlighted { font-size: 14px; }
 }
 
+/* Prefer native system text and selection colors when forced-color accessibility mode is active. */
 @media (forced-colors: active) {
   .editor__syntax { display: none; }
   .editor__source--highlighted { color: CanvasText; caret-color: CanvasText; }

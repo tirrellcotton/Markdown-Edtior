@@ -1,5 +1,9 @@
 @model string
+
+@* Reusable reader region; the host view loads its styles and viewer module. *@
 <div class="markdown-viewer editor__preview" data-markdown-viewer role="region" aria-label="Markdown document" tabindex="0">
+
+  @* Razor encodes the source until the viewer replaces it with sanitized rendered Markdown. *@
   <textarea data-viewer-source hidden>@Model</textarea>
   <noscript>Enable JavaScript to view the formatted Markdown document.</noscript>
 </div>
