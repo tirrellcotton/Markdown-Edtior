@@ -79,6 +79,7 @@ MarkdownEditor.Web/
     editor.ts                       Bundle entry and public API
     viewer.ts                       Reader entry and idempotent initialization
     markdown-editor.ts              One editor instance's coordinator
+    pane-resizer.ts                 Pointer/keyboard resizing of editor panes
     dom.ts                          Typed required-element lookup
     editing/                        Source transforms, image dialog, history
     rendering/                      Preview, Mermaid diagrams, source colors, extraction
@@ -108,6 +109,7 @@ MarkdownEditor.Web/
 | [`viewer.ts`](../MarkdownEditor.Web/Scripts/viewer.ts) | Renders each server-supplied reader root once | Read-only document DOM; exported `initializeMarkdownViewers` |
 | [`markdown-editor.ts`](../MarkdownEditor.Web/Scripts/markdown-editor.ts) | Coordinates controls, events, refreshes, dialogs, file operations, and sending | Changes to source and derived UI |
 | [`dom.ts`](../MarkdownEditor.Web/Scripts/dom.ts) | Checks that required elements exist and have the expected DOM type | Typed element or an explicit error |
+| [`pane-resizer.ts`](../MarkdownEditor.Web/Scripts/pane-resizer.ts) | Owns one divider's pointer capture, keyboard controls, and split ratio | Grid sizing variables and separator accessibility values |
 | [`formatting.ts`](../MarkdownEditor.Web/Scripts/editing/formatting.ts) | Computes source-text transformations | `TextEdit` values |
 | [`formatting-state.ts`](../MarkdownEditor.Web/Scripts/editing/formatting-state.ts) | Maps parsed emphasis back to source offsets | `FormattingRange[]` and active styles |
 | [`history.ts`](../MarkdownEditor.Web/Scripts/editing/history.ts) | Stores document and selection snapshots | Undo/redo snapshots |
@@ -186,7 +188,7 @@ At render time, the partial creates a GUID-based editor ID. Labels, dialog refer
 
 JavaScript generally finds controls by `data-editor-element`, scoped to the editor root. This is separate from CSS presentation classes and generated IDs. Renaming one of those data values requires updating its TypeScript lookup and tests. [`element()`](../MarkdownEditor.Web/Scripts/dom.ts) throws when a required element is missing or has the wrong DOM type, making a broken markup contract visible during initialization.
 
-The component contains a toolbar, source and preview sections, status footer, hidden file input, link and image dialogs, table picker, and table dialog. The `image` toolbar command opens the image dialog using the same visual classes as the link dialog. Table-size buttons, language options, and table-cell inputs are populated by JavaScript.
+The component contains a toolbar, source and preview sections separated by a focusable resize handle, status footer, hidden file input, link and image dialogs, table picker, and table dialog. The `pane-resizer` element has a separator role, vertical orientation, minimum/maximum/current percentage values, and references the source pane through `aria-controls` and its heading through `aria-labelledby`. Pane IDs use the instance prefix. The `image` toolbar command opens the image dialog using the same visual classes as the link dialog. Table-size buttons, language options, and table-cell inputs are populated by JavaScript.
 
 ### Read-only partial contract
 
@@ -219,6 +221,8 @@ sequenceDiagram
 ```
 
 Each `MarkdownEditor` owns its element references, history object, table controls, image dialog, source highlighting object, filename, link selection, and cached formatting ranges. It does not share those fields with another instance.
+
+The constructor also creates a root-scoped `PaneResizer`. Its split ratio starts at 50%, remains separate from Markdown/history/drafts, and lasts until the instance is reloaded. Pointer capture tracks a primary mouse/touch/pen drag even outside the handle; release, cancellation, capture loss, or switching to the phone layout ends dragging. Layout changes only update grid variables and separator values, so the renderer and draft persistence are not rerun. The existing source-highlighting ResizeObserver synchronizes the mirror with the resized textarea.
 
 For multiple editors, choose distinct storage keys. Their UI state is independent, but two instances using the default `markdown-editor.draft.v1` key write the same browser draft slot. Dynamically inserting a new partial also requires an explicit `initializeMarkdownEditors(newRoot)` call; there is no mutation observer that automatically discovers new roots.
 
@@ -612,9 +616,11 @@ Draft content is not automatically transmitted to the application's server while
 
 [`editor.css`](../MarkdownEditor.Web/wwwroot/css/editor.css) scopes most component presentation under `.editor`. It uses BEM-style names for blocks, elements, and modifiers, including `toolbar__button--active` and `editor__pane--preview`.
 
-The editor is a vertical flex container: toolbar at the top, flexible panes in the middle, and a status footer at the bottom. The pane region uses two equal-width grid columns with `minmax(0, 1fr)`, permitting content to shrink without forcing the whole page wider. Preview images are constrained to container width; preview tables and code blocks can scroll horizontally.
+The editor is a vertical flex container: toolbar at the top, flexible panes in the middle, and a status footer at the bottom. The pane region uses two flexible `minmax(0, ...)` grid tracks separated by a 10px resize handle. The tracks start at equal widths; `--editor-source-size` and `--editor-preview-size` set their fractional weights after resizing. Each pane is constrained to 25–75% of the space remaining after the divider. Preview images are constrained to container width; preview tables and code blocks can scroll horizontally.
 
-At widths up to 900px, toolbar gaps/padding tighten, text labels and hints reduce, and pane padding shrinks. At widths up to 560px, the panes stack vertically with minimum row heights, the preview border moves to the top, and status content is simplified. The table picker uses a fixed position on narrow layouts; dialogs and their internal grids have constrained sizes and scrolling.
+The divider has a visible grip, resize cursor, hover/focus states, and `touch-action: none` for direct pointer manipulation. Left/Right arrows adjust the source share by five percentage points, Home/End select the limits, and double-click restores 50/50. ARIA values track the current share and report both pane percentages. Resizing preserves document text, selection, and undo history; separate editors have independent splits.
+
+At widths up to 900px, toolbar gaps/padding tighten, text labels and hints reduce, and pane padding shrinks. At widths up to 560px, the panes stack vertically with minimum row heights, the divider is hidden, the preview border moves to the top, and status content is simplified. A focused divider returns focus to the source when it becomes hidden. Returning to desktop restores the previous split. The table picker uses a fixed position on narrow layouts; dialogs and their internal grids have constrained sizes and scrolling.
 
 The preview defines its own `--preview-*` tokens, while source syntax defines `--syntax-*` tokens in `editor-syntax.css`. Keep those responsibilities separate when changing a theme. The component declares a light color scheme; there is no theme-toggle state machine.
 
@@ -711,6 +717,7 @@ The default test server builds Debug. Viewer sample-loading tests require that c
 | `images.spec.ts` | Image URL insertion, loaded image/alt text, URL escaping and validation, caret/selection, undo/redo, drafts, cancellation, independent instances, desktop/phone sizing |
 | `source-highlighting.spec.ts` | Source colors, strike decoration, exact mirrored text, full-width fences, desktop/phone geometry |
 | `partial.spec.ts` | Host resources, labels, multiple independent editors, repeated initialization |
+| `pane-resizer.spec.ts` | Mouse/touch dragging, cancellation, width limits, keyboard/ARIA controls, independent instances, source-mirror alignment, desktop/phone layout |
 | `submission.spec.ts` | JSON payload, antiforgery, validation, empty documents, failures, duplicates, edits during send, content extraction |
 | `tables.spec.ts` | Table insertion, editing/canceling, contextual operations, escaped pipes, alignments, adjacent content, phones |
 | `viewer.spec.ts` | Read-only formatting, sanitization, Debug sample, empty-query override, independent embedded readers, loaded images, desktop/phone sizing and scrolling |
@@ -733,7 +740,7 @@ Source highlighting also measures DOM geometry after styling changes and rebuild
 
 ### Lifecycle boundaries
 
-The code initializes instances once but does not expose a destroy/dispose API. `TableTools` adds a document-level outside-click listener, and `SourceHighlighting` creates a resize observer without an explicit disconnect path. A future host that frequently removes/replaces editor components should add lifecycle cleanup before assuming repeated mounting is resource-neutral. The WeakSet prevents duplicate initialization; it does not by itself unregister listeners or observers.
+The code initializes instances once but does not expose a destroy/dispose API. `TableTools` adds a document-level outside-click listener, `PaneResizer` registers a media-query change listener, and `SourceHighlighting` creates a resize observer without an explicit disconnect path. A future host that frequently removes/replaces editor components should add lifecycle cleanup before assuming repeated mounting is resource-neutral. The WeakSet prevents duplicate initialization; it does not by itself unregister listeners or observers.
 
 ### Current product limits
 

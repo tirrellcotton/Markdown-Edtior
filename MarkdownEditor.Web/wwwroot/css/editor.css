@@ -30,14 +30,18 @@
 .editor .toolbar__button--active, .editor .toolbar__button--active:hover:not(:disabled) { background: #dce5f4; border-color: #a4bce3; color: #174da6; }
 .editor .toolbar__button--download { width: auto; padding: 0 12px; color: #2158b8; background: #eaf0fc; font-size: 17px; }
 .editor .toolbar__button-text { font-size: 14px; font-weight: 500; }
-.editor__panes { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.editor__panes { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, var(--editor-source-size, 1fr)) 10px minmax(0, var(--editor-preview-size, 1fr)); }
 .editor__pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
-.editor__pane--preview { border-left: 1px solid var(--border); }
+.editor__resizer { display: flex; align-items: center; justify-content: center; background: #f1f3f6; border-inline: 1px solid var(--border); cursor: col-resize; touch-action: none; user-select: none; }
+.editor__resizer-grip { width: 2px; height: 40px; border-radius: 2px; background: #9aa5b5; pointer-events: none; }
+.editor__resizer:hover, .editor__resizer:focus-visible, .editor__panes--resizing > .editor__resizer { background: #dce5f4; }
+.editor__resizer:focus-visible { outline-offset: -2px; }
+.editor__panes--resizing, .editor__panes--resizing * { cursor: col-resize !important; user-select: none; }
 .editor__pane-header { height: 47px; flex-shrink: 0; padding: 0 26px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid #eef0f3; }
 .editor__pane-title { font-size: 13px; letter-spacing: .25px; font-weight: 600; display: flex; align-items: center; gap: 8px; margin: 0; }
 .editor__pane-title > .bi { font-size: 16px; color: var(--muted); }
 .editor__pane-hint, .editor__live-label { color: var(--muted); font-size: 12px; }
-.editor__live-label { padding: 3px 8px; background: #f0f4fa; border-radius: 4px; }
+.editor__live-label { min-width: 0; padding: 3px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: #f0f4fa; border-radius: 4px; }
 .editor__source { flex: 1; width: 100%; min-height: 0; resize: none; border: 0; border-radius: 0; padding: 30px 32px; outline: none; background: #fcfcfd; color: #374151; font-family: Consolas, "Cascadia Code", monospace; font-size: 15px; line-height: 1.8; tab-size: 2; }
 .editor__source:focus-visible { outline: 2px solid #a8c2ee; outline-offset: -2px; }
 .editor__source::placeholder { color: #9097a3; }
@@ -158,6 +162,7 @@
 
 @media (max-width: 560px) {
   .editor__panes { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(180px, 1fr) minmax(180px, 1fr); overflow: auto; }
+  .editor__resizer { display: none; }
   .editor__pane--preview { border-left: 0; border-top: 1px solid var(--border); }
   .editor__pane-header { height: 37px; padding: 0 16px; }
   .editor__source, .editor__preview { padding: 16px; font-size: 14px; }

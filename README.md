@@ -37,6 +37,7 @@ MarkdownEditor.Web/
   Views/Shared/_MarkdownEditor.cshtml  Reusable editor partial
   Views/Shared/_MarkdownViewer.cshtml  Reusable reader partial (string model)
   Scripts/                   Editor/viewer entry points and editor coordinator
+    pane-resizer.ts          Pointer and keyboard control of the pane divider
     editing/                 Formatting, history, image dialog, code insertion
     tables/                  Table parsing, operations, picker, and dialog
     rendering/               Preview, Mermaid diagrams, highlighting, and content extraction
@@ -114,7 +115,7 @@ Multiple readers can coexist with editors. Server-rendered readers initialize au
 - Undo/redo, `.md` file import (up to 1 MB), and UTF-8 Markdown download.
 - `Ctrl+B`, `Ctrl+I`, `Ctrl+K`, `Ctrl+Z`, `Ctrl+Shift+Z`/`Ctrl+Y`, and `Ctrl+S`; Command shortcuts also work on macOS.
 - Draft recovery in this browser's local storage. Saving status reports unavailable storage; download files for a durable copy. Undo history is limited to 200 states and resets on reload.
-- Equal-width desktop panes with independent scrolling; stacked panes on small phone screens.
+- Desktop panes start at equal widths with independent scrolling. Drag the vertical divider left/right with a mouse or touch to resize them; each pane keeps at least 25% of the available pane width. Focus the divider and use Left/Right arrows for 5-percentage-point adjustments or Home/End for the limits. Double-click the divider to restore equal widths. Each editor keeps its own split until the page reloads. At phone widths (560px or less), panes stack and the divider is hidden; widening the window restores the previous split.
 
 Markdown is rendered with Marked and sanitized with DOMPurify. Drafts and imported files stay in the browser until **Send to server** is clicked. Referenced external images may still load from their specified URLs. Bootstrap Icons, Axios, the renderer, and the sanitizer are bundled locally, with no runtime CDN requirement.
 
@@ -190,4 +191,4 @@ npx.cmd playwright install chromium
 npm.cmd test
 ```
 
-Tests start the MVC app automatically and cover live rendering, Mermaid charts and diagrams, draft recovery, formatting, history, links, image insertion and loading, unsafe HTML, import/export, reusable readers, the Debug viewer sample, and responsive layout. The default test server uses a Debug build; when reusing an existing server, ensure it serves the current Debug build. Desktop and phone screenshots are saved under `MarkdownEditor.Web/test-results/`. There is no numeric coverage threshold.
+Tests start the MVC app automatically and cover live rendering, Mermaid charts and diagrams, pane resizing by mouse/touch/keyboard, draft recovery, formatting, history, links, image insertion and loading, unsafe HTML, import/export, reusable readers, the Debug viewer sample, and responsive layout. The default test server uses a Debug build; when reusing an existing server, ensure it serves the current Debug build. Desktop and phone screenshots are saved under `MarkdownEditor.Web/test-results/`. There is no numeric coverage threshold.
