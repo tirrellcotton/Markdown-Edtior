@@ -39,12 +39,12 @@ MarkdownEditor.Web/
   Scripts/                   Editor/viewer entry points and editor coordinator
     editing/                 Formatting, history, image dialog, code insertion
     tables/                  Table parsing, operations, picker, and dialog
-    rendering/               Preview, highlighting, and content extraction
+    rendering/               Preview, Mermaid diagrams, highlighting, and content extraction
     persistence/             Browser drafts and server submission
     tests/                   Playwright browser scenarios
   wwwroot/css/               BEM styles
   wwwroot/images/            Local viewer sample image
-  wwwroot/js/                Generated editor and viewer bundles
+  wwwroot/js/                Generated editor/viewer bundles and lazy shared chunks
   wwwroot/lib/               Generated local Bootstrap Icons assets
 ```
 
@@ -108,7 +108,7 @@ Multiple readers can coexist with editors. Server-rendered readers initialize au
 
 - Heading levels, bold, italic, strikethrough, lists, tasks, quotes, links, images, code, and dividers.
 - **Insert image** (the picture toolbar icon) opens a dialog for an absolute HTTP/HTTPS image URL and an optional image description (alt text). Selected text becomes the suggested description and is replaced by `![description](url)`; with no selection, the image is inserted at the caret. An omitted description defaults to `Image`. The formatted preview displays the image and scales it to fit the pane. Insertion supports undo/redo and draft recovery; Cancel or Escape preserves the document and selection. Images load directly from their URLs; the editor does not upload image files.
-- The **Code block** dropdown inserts a fenced block for one of 29 common languages and formats, including C#, TypeScript, JavaScript, SQL, Python, JSON, PowerShell, and Dockerfile. Existing selected text becomes the code body; otherwise, an editable placeholder is selected. Each insertion supports undo.
+- The **Code block** dropdown inserts a fenced block for one of 30 languages and formats, including Mermaid charts/diagrams, C#, TypeScript, JavaScript, SQL, Python, JSON, PowerShell, and Dockerfile. Existing selected text becomes the code body; otherwise, an editable placeholder is selected. Each insertion supports undo.
 - Table toolbar with a 5×5 size picker. Place the source cursor in a table, then choose **Edit table** for **Insert**, **Select**, or **Delete** options. Insert columns left/right or rows above/below the current cell; select or delete the table, current column, or current row.
 - **Edit cell contents** opens a visual grid. Select actions highlight the requested region in this grid. Edit cell Markdown or change structure, then save as one undoable change; Cancel discards changes. Row counts include the required Markdown header. Deleting a header promotes the next row; deleting the final row or column removes the table.
 - Undo/redo, `.md` file import (up to 1 MB), and UTF-8 Markdown download.
@@ -118,7 +118,31 @@ Multiple readers can coexist with editors. Server-rendered readers initialize au
 
 Markdown is rendered with Marked and sanitized with DOMPurify. Drafts and imported files stay in the browser until **Send to server** is clicked. Referenced external images may still load from their specified URLs. Bootstrap Icons, Axios, the renderer, and the sanitizer are bundled locally, with no runtime CDN requirement.
 
-The preview follows NovarisAI's light-mode palette and typography. As in that project, fenced code keeps a dark background with pink/blue/green/gold syntax highlighting; inline code uses a light bordered surface. Highlight.js is bundled locally with its common languages plus PowerShell, Dart, and Dockerfile. All code-dropdown options support highlighting. Fences can specify a language such as `csharp`, `typescript`, `json`, or `powershell`; unlabelled blocks use automatic detection, while unknown languages remain readable plain text.
+The preview follows NovarisAI's light-mode palette and typography. As in that project, fenced code keeps a dark background with pink/blue/green/gold syntax highlighting; inline code uses a light bordered surface. Highlight.js is bundled locally with its common languages plus PowerShell, Dart, and Dockerfile. Programming-language dropdown options support highlighting; Mermaid renders as a chart or diagram. Fences can specify a language such as `csharp`, `typescript`, `json`, or `powershell`; unlabelled blocks use automatic detection, while unknown languages remain readable plain text.
+
+## Charts and diagrams
+
+Use a fenced `mermaid` block to render flowcharts, sequence diagrams, pie charts, and other Mermaid diagram types in both the live preview and the read-only viewer:
+
+````markdown
+```mermaid
+flowchart LR
+  Write[Write Markdown] --> Preview[Preview diagram]
+  Preview --> Save[Save document]
+```
+
+```mermaid
+pie title Task progress
+  "Done" : 8
+  "Remaining" : 2
+```
+````
+
+Choose **Mermaid chart / diagram** in the **Code block** dropdown to wrap selected text or insert a fence, then replace the selected placeholder with a definition. The locally bundled renderer loads when a document first needs it, and live edits render after a short pause. Keep the generated `wwwroot/js/chunks/` directory alongside the entry bundles when hosting them. No diagram source is sent to an external rendering service.
+
+Diagrams scale to their pane. Invalid definitions remain visible as source with an error message, while other diagrams continue rendering. Each definition is limited to 50,000 characters and 500 edges. Strict security settings disable diagram click actions and HTML labels; sanitized SVG is displayed as an isolated image. Diagram-specific overrides cannot relax these application settings. Source Markdown remains available for accessible text descriptions and editing.
+
+Markdown downloads and drafts retain the original fences. The synchronous content/submission API preserves Mermaid source in plain text and sanitized fenced code in HTML; exported HTML does not include the asynchronously generated diagram images. To display those fences as diagrams, pass the Markdown through the editor or viewer renderer.
 
 ## Submit content to a controller
 
@@ -166,4 +190,4 @@ npx.cmd playwright install chromium
 npm.cmd test
 ```
 
-Tests start the MVC app automatically and cover live rendering, draft recovery, formatting, history, links, image insertion and loading, unsafe HTML, import/export, reusable readers, the Debug viewer sample, and responsive layout. The default test server uses a Debug build; when reusing an existing server, ensure it serves the current Debug build. Desktop and phone screenshots are saved under `MarkdownEditor.Web/test-results/`. There is no numeric coverage threshold.
+Tests start the MVC app automatically and cover live rendering, Mermaid charts and diagrams, draft recovery, formatting, history, links, image insertion and loading, unsafe HTML, import/export, reusable readers, the Debug viewer sample, and responsive layout. The default test server uses a Debug build; when reusing an existing server, ensure it serves the current Debug build. Desktop and phone screenshots are saved under `MarkdownEditor.Web/test-results/`. There is no numeric coverage threshold.

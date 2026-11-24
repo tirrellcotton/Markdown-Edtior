@@ -9,6 +9,8 @@ await build({
   bundle: true,
   outdir: `${webRoot}/js`,
   format: 'esm',
+  splitting: true,
+  chunkNames: 'chunks/[name]-[hash]',
   target: 'es2022',
   minify: true,
   sourcemap: true,
