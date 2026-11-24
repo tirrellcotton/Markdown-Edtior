@@ -16,6 +16,12 @@ Open **http://localhost:5100**. On macOS/Linux, use `npm` instead of `npm.cmd`. 
 
 Open `MarkdownEditor.slnx` in a current Visual Studio or Rider version for solution-based development.
 
+## Azure deployment
+
+The application is configured for the `markdown-editor` Azure Web App. The deployment workflow in [`.github/workflows/deploy-azure.yml`](.github/workflows/deploy-azure.yml) builds the .NET 10 application and frontend assets, then deploys on every push to `main`. With `main` protected so that changes require an approved pull request, a successful merge automatically deploys the merged commit.
+
+Configure the GitHub Actions secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` for Azure OpenID Connect authentication. The Azure identity should have the Website Contributor role scoped to the Web App. Pull requests targeting `main` run the validation workflow in [`.github/workflows/validate.yml`](.github/workflows/validate.yml).
+
 ## Project layout
 
 For a detailed walkthrough of the server, editor modules, rendering, tables, persistence, security, build pipeline, and tests, see the [architectural design document](Documentation/architecture.md). It includes diagrams and links to the implementation.
