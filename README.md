@@ -23,6 +23,7 @@ For a detailed walkthrough of the server, editor modules, rendering, tables, per
 ```text
 MarkdownEditor.slnx
 Documentation/architecture.md  Detailed architecture and code guide
+Documentation/viewer-sample.md Debug viewer sample document
 MarkdownEditor.Web/
   MarkdownEditor.Web.csproj
   package.json               Frontend dependencies and npm scripts
@@ -30,16 +31,19 @@ MarkdownEditor.Web/
   tsconfig.json              TypeScript configuration
   build.mjs                  Frontend asset build
   node_modules/              Installed npm packages (ignored by Git)
-  Controllers/               MVC endpoint
+  Controllers/               Editor, viewer, and submission endpoints
   Views/Editor/Index.cshtml   Host page with CSS/JS references
+  Views/Editor/Viewer.cshtml  Read-only viewer host page
   Views/Shared/_MarkdownEditor.cshtml  Reusable editor partial
-  Scripts/                   TypeScript entry point and editor coordinator
-    editing/                 Formatting, history, and code block insertion
+  Views/Shared/_MarkdownViewer.cshtml  Reusable reader partial (string model)
+  Scripts/                   Editor/viewer entry points and editor coordinator
+    editing/                 Formatting, history, image dialog, code insertion
     tables/                  Table parsing, operations, picker, and dialog
     rendering/               Preview, highlighting, and content extraction
     persistence/             Browser drafts and server submission
     tests/                   Playwright browser scenarios
   wwwroot/css/               BEM styles
+  wwwroot/images/            Local viewer sample image
   wwwroot/js/                Generated editor and viewer bundles
   wwwroot/lib/               Generated local Bootstrap Icons assets
 ```
@@ -96,13 +100,14 @@ Load these resources once in the host view or layout:
 <script type="module" src="~/js/viewer.js" asp-append-version="true"></script>
 ```
 
-The partial fills its container's width and height and scrolls internally; give the container a height (for example, `height: 400px`). It displays rendered headings, tables, lists, links, and highlighted fenced code without a Markdown source pane, toolbar, or draft persistence. Embedded HTML controls are disabled. Markdown is Razor-encoded during transport and rendered through the same Marked, DOMPurify, and Highlight.js pipeline as the editor preview.
+The partial fills its container's width and height and scrolls internally; give the container a height (for example, `height: 400px`). It displays rendered headings, tables, lists, links, images, and highlighted fenced code without a Markdown source pane, toolbar, or draft persistence. Images inserted by the editor's **Insert image** button render from the same `![description](url)` syntax and scale to fit the reader. The Debug sample includes a local landscape image for verification without an external image service. Embedded HTML controls are disabled. Markdown is Razor-encoded during transport and rendered through the same Marked, DOMPurify, and Highlight.js pipeline as the editor preview.
 
 Multiple readers can coexist with editors. Server-rendered readers initialize automatically. For dynamically inserted partials, import `initializeMarkdownViewers` from `/js/viewer.js` and call it with the containing element. Repeated initialization preserves existing readers. Browser tests cover rendering, unsafe content, empty documents, multiple readers, and desktop/phone sizing.
 
 ## Editing
 
-- Heading levels, bold, italic, strikethrough, lists, tasks, quotes, links, code, and dividers.
+- Heading levels, bold, italic, strikethrough, lists, tasks, quotes, links, images, code, and dividers.
+- **Insert image** (the picture toolbar icon) opens a dialog for an absolute HTTP/HTTPS image URL and an optional image description (alt text). Selected text becomes the suggested description and is replaced by `![description](url)`; with no selection, the image is inserted at the caret. An omitted description defaults to `Image`. The formatted preview displays the image and scales it to fit the pane. Insertion supports undo/redo and draft recovery; Cancel or Escape preserves the document and selection. Images load directly from their URLs; the editor does not upload image files.
 - The **Code block** dropdown inserts a fenced block for one of 29 common languages and formats, including C#, TypeScript, JavaScript, SQL, Python, JSON, PowerShell, and Dockerfile. Existing selected text becomes the code body; otherwise, an editable placeholder is selected. Each insertion supports undo.
 - Table toolbar with a 5×5 size picker. Place the source cursor in a table, then choose **Edit table** for **Insert**, **Select**, or **Delete** options. Insert columns left/right or rows above/below the current cell; select or delete the table, current column, or current row.
 - **Edit cell contents** opens a visual grid. Select actions highlight the requested region in this grid. Edit cell Markdown or change structure, then save as one undoable change; Cancel discards changes. Row counts include the required Markdown header. Deleting a header promotes the next row; deleting the final row or column removes the table.
@@ -161,4 +166,4 @@ npx.cmd playwright install chromium
 npm.cmd test
 ```
 
-Tests start the MVC app automatically and cover live rendering, draft recovery, formatting, history, links, unsafe HTML, import/export, and responsive layout. Desktop and phone screenshots are saved under `MarkdownEditor.Web/test-results/`. There is no numeric coverage threshold.
+Tests start the MVC app automatically and cover live rendering, draft recovery, formatting, history, links, image insertion and loading, unsafe HTML, import/export, reusable readers, the Debug viewer sample, and responsive layout. The default test server uses a Debug build; when reusing an existing server, ensure it serves the current Debug build. Desktop and phone screenshots are saved under `MarkdownEditor.Web/test-results/`. There is no numeric coverage threshold.

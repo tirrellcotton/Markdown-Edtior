@@ -33,6 +33,7 @@ test('loads the documentation sample by default in Debug', /** Verifies the cont
   await page.goto('/Editor/Viewer');
   const viewer = page.getByRole('region', { name: 'Markdown document' });
   await expect(viewer.getByRole('heading', { name: 'Markdown viewer sample', exact: true })).toBeVisible();
+  await expect(viewer.getByRole('img', { name: 'Mountain landscape', exact: true })).toHaveJSProperty('naturalWidth', 1200);
   await expect(viewer.getByRole('table')).toBeVisible();
   await expect(viewer.locator('pre code')).toHaveCount(3);
   await expect(viewer.getByRole('checkbox').first()).toBeDisabled();
@@ -49,7 +50,7 @@ test('handles explicitly empty content without recovering an editor draft', /** 
 
 test('embeds independent viewers and preserves repeated initialization', /** Mounts multiple partials in fixed containers alongside an editor. */ async ({ page }) => {
   await page.goto('/');
-  const response = await page.request.get(`/Editor/Viewer?markdown=${encodeURIComponent('# Embedded\n\nOriginal content')}`);
+  const response = await page.request.get(`/Editor/Viewer?markdown=${encodeURIComponent('# Embedded\n\nOriginal content\n\n![Landscape](/images/viewer-sample.svg)')}`);
   await page.evaluate(/** Inserts two partials and initializes them through the exported API. */ async (markup) => {
     const parsed = new DOMParser().parseFromString(markup, 'text/html');
     const partial = parsed.querySelector<HTMLElement>('[data-markdown-viewer]')!;
@@ -72,9 +73,35 @@ test('embeds independent viewers and preserves repeated initialization', /** Mou
   await expect(viewers.nth(1).getByRole('heading')).toHaveText('Embedded');
   await expect(viewers.nth(0)).toHaveCSS('width', '320px');
   await expect(viewers.nth(0)).toHaveCSS('height', '240px');
+  for (const viewer of await viewers.all()) {
+    const image = viewer.getByRole('img', { name: 'Landscape', exact: true });
+    await expect(image).toHaveJSProperty('naturalWidth', 1200);
+    expect((await image.boundingBox())!.width).toBeLessThanOrEqual(320);
+  }
   await page.getByRole('textbox', { name: 'Markdown content' }).fill('# Editor changed');
   await expect(viewers.nth(0).getByRole('heading')).toHaveText('Embedded');
   await expect(viewers.locator('script, link, [data-viewer-source]')).toHaveCount(0);
+});
+
+test('displays Markdown images within desktop and phone reader widths', /** Verifies loaded images retain alternative text and scale without page overflow. */ async ({ page }) => {
+  const markdown = '# Image reader\n\n![Mountain landscape](/images/viewer-sample.svg)';
+  for (const viewport of [{ width: 1440, height: 960 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto(`/Editor/Viewer?markdown=${encodeURIComponent(markdown)}`);
+    const viewer = page.getByRole('region', { name: 'Markdown document' });
+    const image = viewer.getByRole('img', { name: 'Mountain landscape', exact: true });
+    await expect(image).toBeVisible();
+    await expect(image).toHaveJSProperty('naturalWidth', 1200);
+    const dimensions = await image.evaluate(/** Reads image geometry and the page's horizontal extent. */ (node) => ({
+      width: node.getBoundingClientRect().width,
+      height: node.getBoundingClientRect().height,
+      pageWidth: document.documentElement.scrollWidth,
+    }));
+    expect(dimensions.width).toBeLessThanOrEqual(viewport.width);
+    expect(dimensions.width / dimensions.height).toBeCloseTo(2.4, 1);
+    expect(dimensions.pageWidth).toBe(viewport.width);
+    await page.screenshot({ path: `test-results/viewer-image-${viewport.width}.png` });
+  }
 });
 
 test('fills desktop and phone containers with internal scrolling', /** Checks long documents and wide code stay within both viewport sizes. */ async ({ page }) => {

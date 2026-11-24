@@ -29,6 +29,7 @@
       </div>
       <div class="toolbar__group">
         <button class="toolbar__button" type="button" data-command="link" title="Insert link (Ctrl+K)" aria-label="Insert link"><i class="bi bi-link-45deg" aria-hidden="true"></i></button>
+        <button class="toolbar__button" type="button" data-command="image" title="Insert image" aria-label="Insert image" aria-haspopup="dialog" aria-controls="@(editorId)-image-dialog"><i class="bi bi-image" aria-hidden="true"></i></button>
         <div class="table-tools">
           <button class="toolbar__button" type="button" data-command="table" title="Insert or edit table" aria-label="Insert or edit table" aria-expanded="false" aria-controls="@(editorId)-table-picker" aria-haspopup="dialog"><i class="bi bi-table" aria-hidden="true"></i></button>
           <div class="table-tools__picker" id="@(editorId)-table-picker" data-editor-element="table-picker" role="dialog" aria-labelledby="@(editorId)-table-picker-title" hidden>
@@ -105,6 +106,18 @@
       <input class="link-dialog__input" id="@(editorId)-link-url" data-editor-element="link-url" type="url" placeholder="https://example.com" required />
       <p class="link-dialog__hint">Use an http or https address.</p>
       <div class="link-dialog__actions"><button class="link-dialog__button" id="@(editorId)-link-cancel" data-editor-element="link-cancel" type="button">Cancel</button><button class="link-dialog__button link-dialog__button--primary" type="submit">Insert link</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="link-dialog" id="@(editorId)-image-dialog" data-editor-element="image-dialog" aria-labelledby="@(editorId)-image-title" aria-describedby="@(editorId)-image-hint">
+    <form class="link-dialog__form" data-editor-element="image-form">
+      <h2 class="link-dialog__title" id="@(editorId)-image-title">Insert image</h2>
+      <label class="link-dialog__label" for="@(editorId)-image-url">Image URL</label>
+      <input class="link-dialog__input" id="@(editorId)-image-url" data-editor-element="image-url" type="url" placeholder="https://example.com/photo.png" required />
+      <label class="link-dialog__label" for="@(editorId)-image-description">Image description (alt text)</label>
+      <input class="link-dialog__input" id="@(editorId)-image-description" data-editor-element="image-description" placeholder="Describe the image (optional)" />
+      <p class="link-dialog__hint" id="@(editorId)-image-hint">Use an http or https image address. A description helps readers who cannot see the image.</p>
+      <div class="link-dialog__actions"><button class="link-dialog__button" data-editor-element="image-cancel" type="button">Cancel</button><button class="link-dialog__button link-dialog__button--primary" type="submit">Insert image</button></div>
     </form>
   </dialog>
 
