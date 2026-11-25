@@ -2,6 +2,19 @@
 
 A toolbar-only, two-pane Markdown editor built with **ASP.NET Core MVC 10**, **TypeScript**, and **BEM CSS**. Write Markdown on the left and see a sanitized, rendered preview on the right. The compact toolbar and link dialog follow the supplied Word reference, without File, Edit, or View menus.
 
+## Branch workflow
+
+Create feature branches from the latest development branch:
+
+```powershell
+git fetch origin
+git switch --no-track -c feature/your-feature origin/development
+```
+
+Open feature pull requests against `development`. Update the feature branch from `development` before merging. Promote releases through a `development` to `main` pull request; release history can be synchronized back through a `main` to `development` pull request.
+
+`development` is the default GitHub branch. Both long-lived branches block deletion and force pushes and require pull requests with the GitHub Actions `branch-policy` status. Only this repository's `development` branch may merge into `main`; its existing `validate` build check is also required. The [branch policy workflow](.github/workflows/branch-policy.yml) checks PR routing and that feature PRs include the current development base. Git does not record the original branch-creation point, so the default branch, creation command, and repository guidance establish that convention; the status check enforces ancestry at merge time.
+
 ## Run locally
 
 Install a .NET SDK that supports .NET 10 and Node.js 22 or newer. From the repository root:

@@ -632,6 +632,14 @@ In forced-color mode, CSS hides the source mirror and restores system text and c
 
 ## 16. Dependencies and build pipeline
 
+### Branch governance
+
+The default branch is `development`. Features start from the latest `origin/development` and use `feature/*` names. Their pull requests target `development` and must include its current base commit. Releases reach `main` only through a pull request from the same repository's `development` branch. A `main` to `development` PR can synchronize release history.
+
+[`.github/workflows/branch-policy.yml`](../.github/workflows/branch-policy.yml) runs trusted default-branch code on `pull_request_target` events without checking out PR content. It reads branch metadata from the event file, compares commit ancestry through the GitHub API, and publishes the required `branch-policy` commit status on the PR head SHA. Token permissions are limited to reading contents and writing statuses; no application build or deployment runs in this workflow. Both branches require that status and pull requests, block deletion/force pushes, and have no ruleset bypass actors. The existing classic `main` protection additionally requires the `validate` build check. GitHub rulesets/settings are remote configuration, not reconstructed automatically by the workflow.
+
+Git does not store a branch's original parent name. The default branch and the creation instructions in [AGENTS.md](../AGENTS.md) establish the creation convention; the merge gate verifies current development ancestry rather than proving historical creation provenance.
+
 ### Runtime and development libraries
 
 | Dependency | Used for |
