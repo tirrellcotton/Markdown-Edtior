@@ -36,22 +36,19 @@ jobs:
               state=failure
               description='Only this repository development branch may merge into main'
             fi
-          elif [[ "$head_branch" == feature/* ]]; then
-            if [[ "$base_branch" != development ]]; then
-              state=failure
-              description='Feature pull requests must target development'
+          elif [[ "$base_branch" == development ]]; then
+            if [[ "$head_branch" == main && "$head_repo" == "$GITHUB_REPOSITORY" ]]; then
+              description='Synchronizing main back into development'
             else
               comparison=$(gh api "repos/$GITHUB_REPOSITORY/compare/$base_sha...$head_sha" --jq .status)
               if [[ "$comparison" != ahead && "$comparison" != identical ]]; then
                 state=failure
-                description='Update the feature branch from development before merging'
+                description='Update the source branch from development before merging'
               fi
             fi
-          elif [[ "$base_branch" == development && "$head_branch" == main && "$head_repo" == "$GITHUB_REPOSITORY" ]]; then
-            description='Synchronizing main back into development'
           else
             state=failure
-            description='Use feature/* into development, then development into main'
+            description='Target development, then promote development into main'
           fi
 
           gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$head_sha" \
