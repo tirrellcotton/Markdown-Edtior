@@ -4,16 +4,16 @@ A toolbar-only, two-pane Markdown editor built with **ASP.NET Core MVC 10**, **T
 
 ## Branch workflow
 
-Create feature branches from the latest development branch:
+Create working branches from the latest development branch using any branch name:
 
 ```powershell
 git fetch origin
-git switch --no-track -c feature/your-feature origin/development
+git switch --no-track -c your-branch origin/development
 ```
 
-Open feature pull requests against `development`. Update the feature branch from `development` before merging. Promote releases through a `development` to `main` pull request; release history can be synchronized back through a `main` to `development` pull request.
+Open pull requests against `development` from any source branch; no branch-name prefix is required. Update the source branch from `development` before merging. Promote releases through a `development` to `main` pull request; release history can be synchronized back through a `main` to `development` pull request without the development ancestry check.
 
-`development` is the default GitHub branch. Both long-lived branches block deletion and force pushes and require pull requests with the GitHub Actions `branch-policy` status. Only this repository's `development` branch may merge into `main`; its existing `validate` build check is also required. The [branch policy workflow](.github/workflows/branch-policy.yml) checks PR routing and that feature PRs include the current development base. Git does not record the original branch-creation point, so the default branch, creation command, and repository guidance establish that convention; the status check enforces ancestry at merge time.
+`development` is the default GitHub branch. Both long-lived branches block deletion and force pushes and require pull requests with the GitHub Actions `branch-policy` status. Only this repository's `development` branch may merge into `main`; its existing `validate` build check is also required. The [branch policy workflow](.github/workflows/branch-policy.yml) checks PR routing and that PRs targeting development include the current development base, except for same-repository `main` synchronization PRs. Git does not record the original branch-creation point, so the default branch, creation command, and repository guidance establish that convention; the status check enforces ancestry at merge time.
 
 ## Run locally
 
